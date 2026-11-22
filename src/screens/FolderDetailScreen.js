@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
   View,
@@ -8,9 +9,10 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  Animated,
   ActivityIndicator,
   Alert,
+  Modal,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,26 +22,69 @@ import {
   toggleFavorite,
   toggleMarked,
   deleteFile,
+  deleteFiles,
   renameFile,
+  moveFiles,
 } from "../db/files";
 
-import { importPdf } from "../db/pdfImport";
+import { importPdfs } from "../db/pdfImport";
 import { importImage } from "../db/imageImport";
-import * as Linking from "expo-linking";
 
 import { showToast } from "../components/CustomToast";
 import OptionsSheet from "../components/sheets/OptionsSheetFile";
+import FolderPickerSheet from "../components/sheets/FolderPickerSheet";
 import { formatDate, formatSize } from "../utils/dateFormater";
+import { openFile } from "../utils/openFile";
 
 const TABS = ["All", "PDFs", "Images", "Links"];
+
+const SORT_STORAGE_KEY = "folder_sort";
+const SORT_OPTIONS = [
+  { key: "newest", label: "Newest first", icon: "arrow-down" },
+  { key: "oldest", label: "Oldest first", icon: "arrow-up" },
+  { key: "name_asc", label: "Name (A–Z)", icon: "text" },
+  { key: "name_desc", label: "Name (Z–A)", icon: "text" },
+  { key: "size_desc", label: "Largest first", icon: "resize" },
+  { key: "opened", label: "Recently opened", icon: "time" },
+];
+
+const sortFiles = (files, key) => {
+  const byName = (a, b) =>
+    a.name.localeCompare(b.name, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  const sorted = [...files];
+  switch (key) {
+    case "oldest":
+      return sorted.sort((a, b) => a.createdAt - b.createdAt);
+    case "name_asc":
+      return sorted.sort(byName);
+    case "name_desc":
+      return sorted.sort((a, b) => byName(b, a));
+    case "size_desc":
+      return sorted.sort((a, b) => (b.size || 0) - (a.size || 0));
+    case "opened":
+      // Opened files first (most recent on top), never-opened at the end
+      return sorted.sort(
+        (a, b) =>
+          (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0) ||
+          b.createdAt - a.createdAt,
+      );
+    case "newest":
+    default:
+      return sorted.sort((a, b) => b.createdAt - a.createdAt);
+  }
+};
+
 const getFileIcon = (type) => {
   switch (type) {
     case "pdf":
-      return { name: "document-text", color: "#6366f1" }; // red
+      return { name: "document-text", color: "#6366f1" };
     case "image":
-      return { name: "image", color: "#6366f1" }; // green
+      return { name: "image", color: "#6366f1" };
     case "link":
-      return { name: "link", color: "#6366f1" }; // indigo
+      return { name: "link", color: "#6366f1" };
     default:
       return { name: "document", color: "#4f46e5" };
   }
@@ -62,16 +107,58 @@ export default function FolderDetailsScreen({ navigation, route }) {
 
   const [refreshing, setRefreshing] = useState(false);
 
+  // Sorting
+  const [sortKey, setSortKey] = useState("newest");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState([]);
+  const selectionMode = selectedIds.length > 0;
+
+  // Move to folder: list of file ids being moved (null = picker closed)
+  const [moveIds, setMoveIds] = useState(null);
+  const [moving, setMoving] = useState(false);
+
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       loadFiles();
     }, []),
   );
+
+  // Restore the saved sort order
+  useEffect(() => {
+    AsyncStorage.getItem(SORT_STORAGE_KEY)
+      .then((value) => {
+        if (value && SORT_OPTIONS.some((o) => o.key === value)) {
+          setSortKey(value);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Android back button leaves selection mode first
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        if (selectedIds.length > 0) {
+          setSelectedIds([]);
+          return true;
+        }
+        return false;
+      });
+      return () => sub.remove();
+    }, [selectedIds.length]),
+  );
+
   const loadFiles = async () => {
     try {
       setRefreshing(true);
       const data = await getFilesByFolder(folderId);
       setFiles(data);
+      // Drop selections for files that no longer exist
+      setSelectedIds((prev) =>
+        prev.filter((id) => data.some((f) => f.id === id)),
+      );
     } catch (err) {
       console.log("Failed to load files", err);
     } finally {
@@ -95,8 +182,16 @@ export default function FolderDetailsScreen({ navigation, route }) {
       );
     }
 
-    return result;
-  }, [files, searchQuery, activeTab]);
+    return sortFiles(result, sortKey);
+  }, [files, searchQuery, activeTab, sortKey]);
+
+  const currentSort = SORT_OPTIONS.find((o) => o.key === sortKey);
+
+  const chooseSort = (key) => {
+    setSortKey(key);
+    setShowSortMenu(false);
+    AsyncStorage.setItem(SORT_STORAGE_KEY, key).catch(() => {});
+  };
 
   const toggleSearch = () => {
     setIsSearching(!isSearching);
@@ -108,75 +203,302 @@ export default function FolderDetailsScreen({ navigation, route }) {
       prev.map((file) => (file.id === id ? { ...file, ...changes } : file)),
     );
   };
-  const removeFileFromUI = (id) => {
-    setFiles((prev) => prev.filter((file) => file.id !== id));
+  const removeFilesFromUI = (ids) => {
+    setFiles((prev) => prev.filter((file) => !ids.includes(file.id)));
+    setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
   };
 
-  const openFile = (item, navigation) => {
-    if (item.type === "image") {
-      navigation.navigate("ImageViewer", {
-        // files: imageFiles, // pass all images in folder
-        // index: imageIndexMap[item.id],
-        fileId: item.id,
+  // ---------- Selection ----------
+  const toggleSelected = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((f) => selectedIds.includes(f.id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filtered.map((f) => f.id));
+    }
+  };
+
+  const handleRowPress = (item) => {
+    if (selectionMode) {
+      toggleSelected(item.id);
+    } else {
+      openFile(item, navigation);
+      // reflect "opened" immediately (clears unread dot)
+      updateFileInUI(item.id, { lastOpenedAt: Date.now() });
+    }
+  };
+
+  const handleRowLongPress = (item) => {
+    if (!selectionMode) setSelectedIds([item.id]);
+    else toggleSelected(item.id);
+  };
+
+  // ---------- Bulk actions ----------
+  const confirmDelete = (ids) => {
+    if (!ids.length) return;
+    const many = ids.length > 1;
+    Alert.alert(
+      many ? `Delete ${ids.length} files?` : "Delete File?",
+      many
+        ? "These files will be permanently deleted."
+        : "This file will be permanently deleted.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (many) await deleteFiles(ids);
+              else await deleteFile(ids[0]);
+              removeFilesFromUI(ids);
+              showToast({
+                message: many ? `${ids.length} files deleted` : "File deleted",
+                type: "success",
+              });
+            } catch (error) {
+              showToast({ message: "Failed to delete", type: "error" });
+              loadFiles();
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleMoveTo = async (folder) => {
+    if (!moveIds?.length || moving) return;
+    setMoving(true);
+    try {
+      await moveFiles(moveIds, folder.id);
+      removeFilesFromUI(moveIds);
+      showToast({
+        message:
+          moveIds.length > 1
+            ? `Moved ${moveIds.length} files to ${folder.name}`
+            : `Moved to ${folder.name}`,
+        type: "success",
       });
+      setMoveIds(null);
+    } catch (e) {
+      showToast({ message: e.message || "Failed to move", type: "error" });
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  // ---------- Header ----------
+  const renderHeader = () => {
+    if (selectionMode) {
+      return (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setSelectedIds([])}>
+            <Ionicons name="close" size={26} color="#4f46e5" />
+          </TouchableOpacity>
+          <Text style={styles.selectionTitle}>
+            {selectedIds.length} selected
+          </Text>
+          <View style={styles.selectionActions}>
+            <TouchableOpacity
+              onPress={toggleSelectAll}
+              style={styles.iconButton}
+            >
+              <Ionicons
+                name={allVisibleSelected ? "checkbox" : "checkbox-outline"}
+                size={22}
+                color="#4f46e5"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMoveIds(selectedIds)}
+              style={styles.iconButton}
+            >
+              <Ionicons name="folder-open-outline" size={22} color="#4f46e5" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => confirmDelete(selectedIds)}
+              style={styles.iconButton}
+            >
+              <Ionicons name="trash-outline" size={22} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
     }
 
-    if (item.type === "pdf") {
-      navigation.navigate("PdfReader", { fileId: item.id });
-    }
+    return (
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={26} color="#4f46e5" />
+        </TouchableOpacity>
+        {isSearching ? null : (
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>{folderName}</Text>
+            <Text style={styles.headerSubtitle}>
+              {formatDate(createdAt, true)}
+            </Text>
+          </View>
+        )}
+        <View style={styles.headerContainer}>
+          {isSearching ? (
+            <View style={styles.searchBar}>
+              <Ionicons
+                name="search"
+                size={20}
+                color="#6366f1"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Search..."
+                autoFocus={true}
+                value={searchQuery}
+                onChangeText={(text) => setSearchQuery(text)}
+              />
+              <TouchableOpacity onPress={toggleSearch}>
+                <Ionicons name="close-circle" size={22} color="#9ca3af" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={toggleSearch} style={styles.iconButton}>
+              <Ionicons name="search" size={22} color="#4f46e5" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
 
-    if (item.type === "link") {
-      Linking.openURL(item.path);
-    }
+  // ---------- Row ----------
+  const renderItem = ({ item }) => {
+    const isSelected = selectedIds.includes(item.id);
+    const icon = getFileIcon(item.type);
+
+    return (
+      <TouchableOpacity
+        style={[styles.fileRow, isSelected && styles.fileRowSelected]}
+        activeOpacity={0.7}
+        onPress={() => handleRowPress(item)}
+        onLongPress={() => handleRowLongPress(item)}
+        delayLongPress={300}
+      >
+        <View style={styles.fileLeft}>
+          <View style={styles.iconWrapper}>
+            <View style={styles.fileIcon}>
+              {selectionMode ? (
+                <Ionicons
+                  name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                  size={32}
+                  color={isSelected ? "#4f46e5" : "#c7d2fe"}
+                />
+              ) : (
+                <Ionicons name={icon.name} size={35} color={icon.color} />
+              )}
+            </View>
+            {/* Unread: never opened */}
+            {!selectionMode && !item.lastOpenedAt && (
+              <View style={styles.unreadDot} />
+            )}
+          </View>
+
+          <View style={styles.textContent}>
+            <Text style={styles.fileName} numberOfLines={1}>
+              {item.name}
+            </Text>
+
+            <Text style={styles.fileMeta}>
+              Created: {formatDate(item.createdAt)}
+              {item.type !== "link" ? ` • ${formatSize(item.size)}` : ""}
+            </Text>
+            {!!item.lastOpenedAt && (
+              <Text style={styles.lastOpened}>
+                Last opened: {formatDate(item.lastOpenedAt, true)}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {!selectionMode && (
+          <>
+            <View style={styles.fileRight}>
+              {/* Favorite Toggle */}
+              <TouchableOpacity
+                onPress={async () => {
+                  const newValue = item.isFavorite ? 0 : 1;
+                  try {
+                    await toggleFavorite(item.id, newValue);
+                    updateFileInUI(item.id, { isFavorite: newValue });
+                  } catch (e) {
+                    showToast({
+                      message: "Failed to update favorite",
+                      type: "error",
+                    });
+                  }
+                }}
+                style={styles.actionButton}
+              >
+                <Ionicons
+                  name={item.isFavorite ? "heart" : "heart-outline"}
+                  size={22}
+                  color={item.isFavorite ? "#ef44d2" : "#d1d5db"}
+                />
+              </TouchableOpacity>
+
+              {/* Mark as Read Toggle */}
+              <TouchableOpacity
+                onPress={async () => {
+                  const newValue = item.isMarked ? 0 : 1;
+                  try {
+                    await toggleMarked(item.id, newValue);
+                    updateFileInUI(item.id, { isMarked: newValue });
+                  } catch (e) {
+                    showToast({
+                      message: "Failed to update mark",
+                      type: "error",
+                    });
+                  }
+                }}
+                style={styles.actionButton}
+              >
+                <Ionicons
+                  name={
+                    item.isMarked
+                      ? "checkmark-done-circle"
+                      : "checkmark-circle-outline"
+                  }
+                  size={22}
+                  color={item.isMarked ? "#10b918" : "#d1d5db"}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* More Options */}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setSelectedItem(item);
+                setShowOptions(true);
+              }}
+            >
+              <Ionicons name="ellipsis-vertical" size={26} color="#9ca3af" />
+            </TouchableOpacity>
+          </>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={26} color="#4f46e5" />
-          </TouchableOpacity>
-          {isSearching ? null : (
-            <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>{folderName}</Text>
-              <Text style={styles.headerSubtitle}>
-                {formatDate(createdAt, true)}
-              </Text>
-            </View>
-          )}
-          <View style={styles.headerContainer}>
-            {isSearching ? (
-              <View style={styles.searchBar}>
-                <Ionicons
-                  name="search"
-                  size={20}
-                  color="#6366f1"
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Search..."
-                  autoFocus={true}
-                  m
-                  value={searchQuery}
-                  onChangeText={(text) => setSearchQuery(text)}
-                />
-                <TouchableOpacity onPress={toggleSearch}>
-                  <Ionicons name="close-circle" size={22} color="#9ca3af" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                onPress={toggleSearch}
-                style={styles.iconButton}
-              >
-                <Ionicons name="search" size={22} color="#4f46e5" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        {renderHeader()}
 
         {/* Tabs */}
         <View style={styles.tabs}>
@@ -199,6 +521,20 @@ export default function FolderDetailsScreen({ navigation, route }) {
           ))}
         </View>
 
+        {/* Sort bar */}
+        <View style={styles.sortBar}>
+          <Text style={styles.countText}>
+            {filtered.length} {filtered.length === 1 ? "item" : "items"}
+          </Text>
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setShowSortMenu(true)}
+          >
+            <Ionicons name="swap-vertical" size={16} color="#4f46e5" />
+            <Text style={styles.sortButtonText}>{currentSort?.label}</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading && (
           <View style={styles.center}>
             <ActivityIndicator size="large" color="#4f46e5" />
@@ -214,6 +550,7 @@ export default function FolderDetailsScreen({ navigation, route }) {
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshing={refreshing}
           onRefresh={loadFiles}
+          extraData={selectedIds}
           ListEmptyComponent={
             !loading ? (
               <View style={styles.center}>
@@ -224,135 +561,46 @@ export default function FolderDetailsScreen({ navigation, route }) {
                 />
                 <Text style={styles.message}>No files found</Text>
                 <Text style={styles.subMessage}>
-                  Tap the "+" button to create your first file
+                  Tap the "+" button to add your first file
                 </Text>
               </View>
             ) : null
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.fileRow}
-              activeOpacity={0.7}
-              onPress={() => openFile(item, navigation)}
-            >
-              <View style={styles.fileLeft}>
-                {/* Icon Container with Unread Dot */}
-                <View style={styles.iconWrapper}>
-                  <View style={styles.fileIcon}>
-                    {/* const icon = getFileIcon(item.type); */}
-                    <Ionicons
-                      name={getFileIcon(item.type).name}
-                      size={35}
-                      color={getFileIcon(item.type).color}
-                    />
-                  </View>
-                  {!item.isRead && <View style={styles.unreadDot} />}
-                </View>
-
-                {/* Text Content */}
-                <View style={styles.textContent}>
-                  <Text style={styles.fileName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-
-                  {/* Metadata: Created Date and Size */}
-                  <Text style={styles.fileMeta}>
-                    Created: {formatDate(item.createdAt)} •{" "}
-                    {formatSize(item.size)}
-                  </Text>
-                  {item.lastOpened && (
-                    <Text style={styles.lastOpened}>
-                      Last opened: {item.lastOpened}
-                    </Text>
-                  )}
-                </View>
-              </View>
-              <View style={styles.fileRight}>
-                {/* Favorite Toggle */}
-                <TouchableOpacity
-                  onPress={async () => {
-                    const newValue = item.isFavorite ? 0 : 1;
-                    try {
-                      await toggleFavorite(item.id, newValue);
-                      updateFileInUI(item.id, { isFavorite: newValue });
-                    } catch (e) {
-                      showToast({
-                        message: "Failed to update favorite",
-                        type: "error",
-                      });
-                    }
-                  }}
-                  style={styles.actionButton}
-                >
-                  <Ionicons
-                    name={item.isFavorite ? "heart" : "heart-outline"}
-                    size={22}
-                    color={item.isFavorite ? "#ef44d2" : "#d1d5db"}
-                  />
-                </TouchableOpacity>
-
-                {/* Mark as Read Toggle */}
-                <TouchableOpacity
-                  onPress={async () => {
-                    const newValue = item.isMarked ? 0 : 1;
-                    try {
-                      await toggleMarked(item.id, newValue);
-                      updateFileInUI(item.id, { isMarked: newValue });
-                    } catch (e) {
-                      showToast({
-                        message: "Failed to update mark",
-                        type: "error",
-                      });
-                    }
-                  }}
-                  style={styles.actionButton}
-                >
-                  <Ionicons
-                    name={
-                      item.isMarked
-                        ? "checkmark-done-circle"
-                        : "checkmark-circle-outline"
-                    }
-                    size={22}
-                    color={item.isMarked ? "#10b918" : "#d1d5db"}
-                  />
-                </TouchableOpacity>
-              </View>
-              {/* More Options */}
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  setSelectedItem(item);
-                  setShowOptions(true);
-                }}
-              >
-                <Ionicons name="ellipsis-vertical" size={26} color="#9ca3af" />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          )}
+          renderItem={renderItem}
         />
 
         {/* Floating Add Button */}
-        <TouchableOpacity style={styles.fab} onPress={() => setShowSheet(true)}>
-          <Ionicons name="add" size={30} color="#fff" />
-        </TouchableOpacity>
-        {/* Bottom Sheet */}
+        {!selectionMode && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => setShowSheet(true)}
+          >
+            <Ionicons name="add" size={30} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {/* Add file sheet */}
         <AddFileSheet
           visible={showSheet}
           onClose={() => setShowSheet(false)}
           onImportPdf={async () => {
             try {
-              const newFile = await importPdf(folderId);
-              if (newFile?.status === true) {
-                showToast({
-                  message: `Imported ${newFile.name}`,
-                  type: "success",
-                });
-                loadFiles();
-                setShowSheet(false);
-              } else {
+              const result = await importPdfs(folderId);
+              if (!result) {
                 console.log("User cancelled document picker");
+                return;
               }
+              const { imported, failed } = result;
+              showToast({
+                message:
+                  imported.length === 1
+                    ? `Imported ${imported[0].name}`
+                    : `Imported ${imported.length} PDFs` +
+                      (failed.length ? ` (${failed.length} failed)` : ""),
+                type: failed.length ? "error" : "success",
+              });
+              loadFiles();
+              setShowSheet(false);
             } catch (error) {
               showToast({
                 message: error.message || "Failed to import PDF",
@@ -388,6 +636,8 @@ export default function FolderDetailsScreen({ navigation, route }) {
             navigation.navigate("AddLinkScreen", { folderId });
           }}
         />
+
+        {/* Per-file options */}
         <OptionsSheet
           visible={showOptions}
           onClose={() => setShowOptions(false)}
@@ -395,6 +645,10 @@ export default function FolderDetailsScreen({ navigation, route }) {
             setShowOptions(false);
             setNewName(selectedItem.name);
             setShowRename(true);
+          }}
+          onMove={() => {
+            setShowOptions(false);
+            setMoveIds([selectedItem.id]);
           }}
           onMark={async () => {
             setShowOptions(false);
@@ -425,37 +679,66 @@ export default function FolderDetailsScreen({ navigation, route }) {
           }}
           onDelete={() => {
             setShowOptions(false);
-
-            Alert.alert(
-              "Delete File?",
-              "This file will be permanently deleted.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: async () => {
-                    try {
-                      await deleteFile(selectedItem.id);
-
-                      removeFileFromUI(selectedItem.id);
-
-                      showToast({
-                        message: "File deleted",
-                        type: "success",
-                      });
-                    } catch (error) {
-                      showToast({
-                        message: "Failed to delete file",
-                        type: "error",
-                      });
-                    }
-                  },
-                },
-              ],
-            );
+            confirmDelete([selectedItem.id]);
           }}
         />
+
+        {/* Move to folder */}
+        <FolderPickerSheet
+          visible={!!moveIds}
+          onClose={() => !moving && setMoveIds(null)}
+          title={
+            moveIds?.length > 1
+              ? `Move ${moveIds.length} files to`
+              : "Move to folder"
+          }
+          excludeFolderId={folderId}
+          onSelect={handleMoveTo}
+          busy={moving}
+        />
+
+        {/* Sort menu */}
+        <Modal
+          visible={showSortMenu}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSortMenu(false)}
+        >
+          <TouchableOpacity
+            style={styles.sortBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowSortMenu(false)}
+          >
+            <View style={styles.sortMenu}>
+              <Text style={styles.sortMenuTitle}>Sort by</Text>
+              {SORT_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={styles.sortOption}
+                  onPress={() => chooseSort(option.key)}
+                >
+                  <Ionicons
+                    name={option.icon}
+                    size={18}
+                    color={sortKey === option.key ? "#4f46e5" : "#6b7280"}
+                  />
+                  <Text
+                    style={[
+                      styles.sortOptionText,
+                      sortKey === option.key && styles.sortOptionActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  {sortKey === option.key && (
+                    <Ionicons name="checkmark" size={18} color="#4f46e5" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
         {showRename && (
           <View style={styles.renameOverlay}>
             <View style={styles.renameBox}>
@@ -477,14 +760,20 @@ export default function FolderDetailsScreen({ navigation, route }) {
                 <TouchableOpacity
                   onPress={async () => {
                     if (!newName.trim()) return;
-
-                    await renameFile(selectedItem.id, newName.trim());
-                    setShowRename(false);
-                    loadFiles();
-                    showToast({
-                      message: "File renamed",
-                      type: "success",
-                    });
+                    try {
+                      await renameFile(selectedItem.id, newName.trim());
+                      setShowRename(false);
+                      loadFiles();
+                      showToast({
+                        message: "File renamed",
+                        type: "success",
+                      });
+                    } catch {
+                      showToast({
+                        message: "Failed to rename file",
+                        type: "error",
+                      });
+                    }
                   }}
                 >
                   <Text style={styles.saveText}>Save</Text>
@@ -712,5 +1001,90 @@ const styles = StyleSheet.create({
   saveText: {
     color: "#4f46e5",
     fontWeight: "600",
+  },
+
+  /* Selection mode */
+  selectionTitle: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  selectionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  fileRowSelected: {
+    backgroundColor: "#eef2ff",
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
+  },
+
+  /* Sort */
+  sortBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  countText: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "500",
+  },
+  sortButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: "#eef2ff",
+  },
+  sortButtonText: {
+    fontSize: 13,
+    color: "#4f46e5",
+    fontWeight: "600",
+  },
+  sortBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sortMenu: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 12,
+  },
+  sortMenuTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#6366f1",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  sortOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  sortOptionText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#374151",
+  },
+  sortOptionActive: {
+    color: "#4f46e5",
+    fontWeight: "700",
   },
 });

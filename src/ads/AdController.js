@@ -1,87 +1,80 @@
-import mobileAds, {
+import {
   InterstitialAd,
   RewardedAd,
   AdEventType,
   RewardedAdEventType,
   TestIds,
 } from "react-native-google-mobile-ads";
-import { loadAdsConfig, shouldShowAd } from "./AdsManager"; // updated remote config helper
 
-let interstitial = null;
+const INTERSTITIAL_ID = __DEV__
+  ? TestIds.INTERSTITIAL
+  : "ca-app-pub-6476459310344533/8019807113";
+
+const REWARDED_ID = __DEV__
+  ? TestIds.REWARDED
+  : "ca-app-pub-6476459310344533/4000166479";
+
+// Give up if an ad hasn't loaded in this time, so callers never hang
+const LOAD_TIMEOUT_MS = 8000;
+
+/**
+ * Load an ad and show it as soon as it's ready.
+ * Resolves true if the ad was shown, false if it failed or timed out.
+ * Gating (limits / probability) is done by the caller (useAdOnScreen).
+ */
+const loadAndShow = (ad, { loadedEvent = AdEventType.LOADED, extraListeners = [] } = {}) =>
+  new Promise((resolve) => {
+    let shown = false;
+    let settled = false;
+    const unsubscribers = [];
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      unsubscribers.forEach((u) => u());
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      if (!shown) finish(false);
+    }, LOAD_TIMEOUT_MS);
+
+    unsubscribers.push(
+      ad.addAdEventListener(loadedEvent, () => {
+        if (settled) return;
+        shown = true;
+        clearTimeout(timer);
+        ad.show().catch(() => finish(false));
+      }),
+      ad.addAdEventListener(AdEventType.ERROR, (error) => {
+        console.log("Ad error:", error);
+        finish(false);
+      }),
+      ad.addAdEventListener(AdEventType.CLOSED, () => finish(true)),
+      ...extraListeners.map(([type, cb]) => ad.addAdEventListener(type, cb)),
+    );
+
+    ad.load();
+  });
 
 // ===============================
 // Interstitial Ad
 // ===============================
-export const showInterstitialAd = async () => {
-  const config = await loadAdsConfig();
-  const canShow = await shouldShowAd(config);
-
-  // if (!canShow) {
-  //   console.log("Interstitial ad not allowed by Remote Config or daily/session limit");
-  //   return;
-  // }
-
-  if (!interstitial) {
-    interstitial = InterstitialAd.createForAdRequest(
-      __DEV__ ? TestIds.INTERSTITIAL : "ca-app-pub-6476459310344533/8019807113",
-      { requestNonPersonalizedAdsOnly: false },
-    );
-  }
-
-  return new Promise((resolve) => {
-    const unsubscribeLoaded = interstitial.addAdEventListener(
-      AdEventType.LOADED,
-      () => {
-        interstitial.show();
-      },
-    );
-
-    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-      unsubscribeLoaded();
-      unsubscribeClosed();
-      resolve(true);
-    });
-
-    interstitial.load();
-  });
-};
-
+export const showInterstitialAd = () =>
+  loadAndShow(InterstitialAd.createForAdRequest(INTERSTITIAL_ID));
 
 // ===============================
-// Rewarded Interstitial Ad
+// Rewarded Ad
 // ===============================
-export const showRewardedAd = async () => {
-  const config = await loadAdsConfig();
-  const canShow = await shouldShowAd(config);
-
-  if (!canShow) {
-    console.log("Rewarded ad not allowed by Remote Config or daily/session limit");
-    return;
-  }
-
-  const rewarded = RewardedAd.createForAdRequest(
-    __DEV__ ? TestIds.REWARDED_INTERSTITIAL : "ca-app-pub-6476459310344533/4000166479",
-  );
-
-  return new Promise((resolve) => {
-    const unsubscribeLoaded = rewarded.addAdEventListener(AdEventType.LOADED, () => {
-      rewarded.show();
-    });
-
-    const unsubscribeReward = rewarded.addAdEventListener(
-      RewardedAdEventType.EARNED_REWARD,
-      (reward) => {
-        console.log("User earned reward:", reward);
-      },
-    );
-
-    const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-      unsubscribeLoaded();
-      unsubscribeReward();
-      unsubscribeClosed();
-      resolve(true);
-    });
-
-    rewarded.load();
+// Rewarded ads emit RewardedAdEventType.LOADED (not AdEventType.LOADED)
+export const showRewardedAd = () =>
+  loadAndShow(RewardedAd.createForAdRequest(REWARDED_ID), {
+    loadedEvent: RewardedAdEventType.LOADED,
+    extraListeners: [
+      [
+        RewardedAdEventType.EARNED_REWARD,
+        (reward) => console.log("User earned reward:", reward),
+      ],
+    ],
   });
-};

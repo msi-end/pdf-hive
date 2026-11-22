@@ -1,11 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Share,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Pdf from "react-native-pdf";
 import * as Sharing from "expo-sharing";
-import { showAppOpenAd } from "../ads/appOpenManager";
-import { useIsFocused } from "@react-navigation/native";
+import * as Linking from "expo-linking";
 import { updateLastOpenedPage } from "../db/pdfProgress";
 
 import {
@@ -21,40 +28,58 @@ export default function PdfReaderScreen({ route, navigation }) {
   const [file, setFile] = useState(null);
   const [page, setPage] = useState(1);
   const [initialPage, setInitialPage] = useState(1);
-  const [darkMode, setDarkMode] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isMarked, setIsMarked] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
+  const [loadError, setLoadError] = useState(null);
   const pdfRef = useRef(null);
+
+  const isLink = file?.type === "link";
 
   useEffect(() => {
     loadPdf();
   }, []);
 
-  const isFocused = useIsFocused();
-  useEffect(() => {
-    if (isFocused) {
-      showAppOpenAd();
-    }
-  }, [isFocused]);
-
   const loadPdf = async () => {
     const f = await getFileById(fileId);
+    if (!f) {
+      Alert.alert("Error", "File not found", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+      return;
+    }
     setFile(f);
-    setPage(f?.lastOpenedPage || 1);
-    setInitialPage(f?.lastOpenedPage || 1);
-    setIsFavorite(f?.isFavorite === 1);
-    setIsMarked(f?.isMarked === 1);
+    setPage(f.lastOpenedPage || 1);
+    setInitialPage(f.lastOpenedPage || 1);
+    setIsFavorite(f.isFavorite === 1);
+    setIsMarked(f.isMarked === 1);
+  };
+
+  const getSource = () => {
+    if (isLink) return { uri: file.path, cache: true };
+    return {
+      uri: file.path.startsWith("file://") ? file.path : `file://${file.path}`,
+    };
   };
 
   const handleShare = async () => {
-    await Sharing.shareAsync(file.path);
+    try {
+      if (isLink) {
+        await Share.share({ message: file.path });
+      } else {
+        await Sharing.shareAsync(file.path, { mimeType: "application/pdf" });
+      }
+    } catch {
+      Alert.alert("Error", "Unable to share file");
+    }
   };
 
   const handleDelete = async () => {
     Alert.alert(
-      "Delete PDF?",
-      "This cannot be undone. PDF will be deleted permanently",
+      isLink ? "Delete link?" : "Delete PDF?",
+      isLink
+        ? "This link will be removed from your library."
+        : "This cannot be undone. PDF will be deleted permanently",
       [
         { text: "Cancel" },
         {
@@ -80,97 +105,104 @@ export default function PdfReaderScreen({ route, navigation }) {
     setIsMarked(!isMarked);
   };
 
+  const goToPage = (newPage) => {
+    if (newPage < 1 || (totalPages && newPage > totalPages)) return;
+    pdfRef.current?.setPage(newPage);
+    setPage(newPage);
+  };
+
   if (!file) return null;
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="chevron-back"
-            size={26}
-            color={darkMode ? "#fff" : "#000"}
-          />
+          <Ionicons name="chevron-back" size={26} color="#000" />
         </TouchableOpacity>
 
-        <Text
-          numberOfLines={1}
-          style={{
-            flex: 1,
-            marginHorizontal: 10,
-            color: darkMode ? "#fff" : "#000",
-          }}
-        >
+        <Text numberOfLines={1} style={styles.title}>
           {file.name}
         </Text>
 
-        <TouchableOpacity onPress={() => setDarkMode(!darkMode)}>
-          <Ionicons
-            name={darkMode ? "moon" : "sunny"}
-            size={22}
-            color={darkMode ? "#fff" : "#000"}
-          />
-        </TouchableOpacity>
+        {isLink && (
+          <TouchableOpacity onPress={() => Linking.openURL(file.path)}>
+            <Ionicons name="open-outline" size={22} color="#000" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* PDF VIEW */}
-      <Pdf
-        ref={pdfRef}
-        source={{
-          uri: file.path.startsWith("file://")
-            ? file.path
-            : `file://${file.path}`,
-        }}
-        style={{ flex: 1 }}
-        page={initialPage}
-        enablePaging={false}
-        horizontal={false}
-        enableAntialiasing={true}
-        spacing={4}
-        trustAllCerts={false}
-        onLoadComplete={(numberOfPages) => {
-          setTotalPages(numberOfPages);
-        }}
-        onPageChanged={(p) => {
-          setPage(p);
-          updateLastOpenedPage(fileId, p).catch((e) =>
-            console.log("Failed to save page:", e),
-          );
-        }}
-        onError={(error) => console.log("PDF ERROR:", error)}
-      />
+      {loadError ? (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle-outline" size={48} color="#9ca3af" />
+          <Text style={styles.errorTitle}>Couldn't open this PDF</Text>
+          <Text style={styles.errorText}>
+            {isLink
+              ? "The link may not point directly to a PDF, or you may be offline."
+              : "The file may be damaged or missing."}
+          </Text>
+          {isLink && (
+            <TouchableOpacity
+              style={styles.errorButton}
+              onPress={() => Linking.openURL(file.path)}
+            >
+              <Text style={styles.errorButtonText}>Open in browser</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <Pdf
+          ref={pdfRef}
+          source={getSource()}
+          style={{ flex: 1 }}
+          page={initialPage}
+          enablePaging={false}
+          horizontal={false}
+          enableAntialiasing={true}
+          spacing={4}
+          trustAllCerts={false}
+          renderActivityIndicator={() => (
+            <ActivityIndicator size="large" color="#4f46e5" />
+          )}
+          onLoadComplete={(numberOfPages) => {
+            setTotalPages(numberOfPages);
+          }}
+          onPageChanged={(p) => {
+            setPage(p);
+            updateLastOpenedPage(fileId, p).catch((e) =>
+              console.log("Failed to save page:", e),
+            );
+          }}
+          onError={(error) => {
+            console.log("PDF ERROR:", error);
+            setLoadError(error);
+          }}
+        />
+      )}
 
       {/* PAGE INDICATOR */}
-      <View style={styles.pageIndicator}>
-        <TouchableOpacity
-          disabled={page === 1}
-          onPress={() => {
-            const newPage = page - 1;
-            pdfRef.current.setPage(newPage);
-            setPage(newPage);
-          }}
-        >
-          <Ionicons name="caret-back-circle" size={28} color="#fff" />
-        </TouchableOpacity>
+      {!loadError && totalPages > 0 && (
+        <View style={styles.pageIndicator}>
+          <TouchableOpacity
+            disabled={page <= 1}
+            onPress={() => goToPage(page - 1)}
+          >
+            <Ionicons name="caret-back-circle" size={28} color="#fff" />
+          </TouchableOpacity>
 
-        <Text style={styles.pageText}>
-          {page} / {totalPages}
-        </Text>
+          <Text style={styles.pageText}>
+            {page} / {totalPages}
+          </Text>
 
-        <TouchableOpacity
-          disabled={page === totalPages}
-          onPress={() => {
-            const newPage = page + 1;
-            pdfRef.current.setPage(newPage);
-            setPage(newPage);
-          }}
-        >
-          <Ionicons name="caret-forward-circle" size={28} color="#fff" />
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            disabled={page >= totalPages}
+            onPress={() => goToPage(page + 1)}
+          >
+            <Ionicons name="caret-forward-circle" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* BOTTOM ACTION BAR */}
       <View style={styles.bottomBar}>
@@ -212,6 +244,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
+  title: {
+    flex: 1,
+    marginHorizontal: 10,
+    color: "#000",
+  },
   bottomBar: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -233,6 +270,35 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   pageText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  errorBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    marginTop: 12,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  errorText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+  },
+  errorButton: {
+    marginTop: 18,
+    backgroundColor: "#4f46e5",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  errorButtonText: {
     color: "#fff",
     fontWeight: "600",
   },

@@ -18,79 +18,107 @@ const ensurePdfDir = async () => {
 };
 
 /**
- * Generate unique filename
+ * Generate unique filename (safe for the file system)
  */
 const generateUniqueFileName = (originalName) => {
   const timestamp = Date.now();
-  const cleanName = originalName.replace(/\s+/g, "_");
-  return `${timestamp}_${cleanName}`;
+  const random = Math.random().toString(36).slice(2, 6);
+  const cleanName = originalName.replace(/[^\w.-]+/g, "_");
+  return `${timestamp}_${random}_${cleanName}`;
 };
 
 /**
- * Pick PDF from device
+ * Make sure a display name ends with .pdf
  */
-const pickPdf = async () => {
+const ensurePdfExtension = (name) => {
+  const trimmed = (name || "").trim() || "Document";
+  return /\.pdf$/i.test(trimmed) ? trimmed : `${trimmed}.pdf`;
+};
+
+/**
+ * Copy a PDF from any readable URI (file://, content://) into app storage
+ * and save it in SQLite. Used by the picker and by "Open with".
+ */
+export const savePdfFromUri = async ({ uri, name, size, folderId }) => {
+  if (!folderId) throw new Error("folderId is required");
+  if (!uri) throw new Error("File URI is required");
+
+  await ensurePdfDir();
+
+  const displayName = ensurePdfExtension(name);
+  const destinationPath = `${PDF_DIR}${generateUniqueFileName(displayName)}`;
+
+  await FileSystem.copyAsync({ from: uri, to: destinationPath });
+
+  let finalSize = size || 0;
+  if (!finalSize) {
+    try {
+      const info = await FileSystem.getInfoAsync(destinationPath);
+      finalSize = info.exists ? info.size || 0 : 0;
+    } catch {}
+  }
+
+  const fileId = await addFile({
+    name: displayName,
+    type: "pdf",
+    path: destinationPath,
+    folderId,
+    size: finalSize,
+    lastOpenedPage: 1,
+  });
+
+  return {
+    id: fileId,
+    name: displayName,
+    path: destinationPath,
+    size: finalSize,
+    folderId,
+    type: "pdf",
+  };
+};
+
+/**
+ * Import one or more PDFs picked from the device.
+ * Returns { imported: [...files], failed: [...names] },
+ * or null if the user cancelled the picker.
+ */
+export const importPdfs = async (folderId) => {
+  if (!folderId) throw new Error("folderId is required");
+
   const result = await DocumentPicker.getDocumentAsync({
     type: "application/pdf",
     copyToCacheDirectory: false,
-    multiple: false,
+    multiple: true,
   });
 
-  if (result.canceled) {
-    return null;
-  }
+  if (result.canceled || !result.assets?.length) return null;
 
-  return result.assets[0];
-};
+  const imported = [];
+  const failed = [];
 
-/**
- * Import PDF:
- * - Pick PDF
- * - Copy to app storage
- * - Save metadata in SQLite
- */
-export const importPdf = async (folderId) => {
-  try {
-    if (!folderId) throw new Error("folderId is required");
-
-    await ensurePdfDir();
-
-    const pickedFile = await pickPdf();
-    if (!pickedFile) return null;
-
-    const uniqueName = generateUniqueFileName(pickedFile.name);
-    const destinationPath = `${PDF_DIR}${uniqueName}`;
-
-    await FileSystem.copyAsync({
-      from: pickedFile.uri,
-      to: destinationPath,
-    });
-
-    const fileId = await addFile({
-      name: pickedFile.name,
-      type: "pdf",
-      path: destinationPath,
-      folderId,
-      size: pickedFile.size || 0,
-      lastOpenedPage: 1,
-    });
-
-    return {
-      status: true,
-      id: fileId,
-      name: pickedFile.name,
-      path: destinationPath,
-      size: pickedFile.size || 0,
-      folderId,
-      type: "pdf",
-    };
-  } catch (error) {
-    if (
-      error.message?.includes("permission") ||
-      error.message?.includes("Permission")
-    ) {
-      throw new Error("File permission denied");
+  for (const asset of result.assets) {
+    try {
+      imported.push(
+        await savePdfFromUri({
+          uri: asset.uri,
+          name: asset.name,
+          size: asset.size,
+          folderId,
+        }),
+      );
+    } catch (error) {
+      console.log("Failed to import PDF:", asset.name, error);
+      failed.push(asset.name);
     }
-    throw error;
   }
+
+  if (!imported.length && failed.length) {
+    throw new Error(
+      failed.length === 1
+        ? `Failed to import ${failed[0]}`
+        : `Failed to import ${failed.length} PDFs`,
+    );
+  }
+
+  return { imported, failed };
 };

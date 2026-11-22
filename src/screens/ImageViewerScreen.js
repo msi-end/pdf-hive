@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,106 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  GestureDetector,
+  Gesture,
+} from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { getFileById, toggleFavorite, deleteFile } from "../db/files";
 
-import { showAppOpenAd } from "../ads/appOpenManager";
-import { useIsFocused } from "@react-navigation/native";
-
 const { width, height } = Dimensions.get("window");
+const MIN_SCALE = 1;
+const MAX_SCALE = 5;
+const DOUBLE_TAP_SCALE = 2.5;
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+/**
+ * Pinch to zoom, drag to pan when zoomed, double-tap to zoom in/out.
+ */
+function useZoom() {
+  const scale = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  // Committed values at the end of the last gesture
+  const saved = useRef({ scale: 1, x: 0, y: 0 });
+  // Live values during a gesture
+  const live = useRef({ scale: 1, x: 0, y: 0 });
+
+  const clampTranslation = (x, y, s) => {
+    const maxX = ((s - 1) * width) / 2;
+    const maxY = ((s - 1) * height) / 2;
+    return { x: clamp(x, -maxX, maxX), y: clamp(y, -maxY, maxY) };
+  };
+
+  const animateTo = (s, x, y) => {
+    saved.current = { scale: s, x, y };
+    live.current = { scale: s, x, y };
+    Animated.parallel([
+      Animated.spring(scale, { toValue: s, useNativeDriver: true }),
+      Animated.spring(translateX, { toValue: x, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: y, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const pinch = Gesture.Pinch()
+    .runOnJS(true)
+    .onUpdate((e) => {
+      const s = clamp(saved.current.scale * e.scale, MIN_SCALE, MAX_SCALE);
+      live.current.scale = s;
+      scale.setValue(s);
+    })
+    .onEnd(() => {
+      const s = live.current.scale;
+      if (s <= 1.01) {
+        animateTo(1, 0, 0);
+      } else {
+        const t = clampTranslation(live.current.x, live.current.y, s);
+        animateTo(s, t.x, t.y);
+      }
+    });
+
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .averageTouches(true)
+    .onUpdate((e) => {
+      if (live.current.scale <= 1) return;
+      const t = clampTranslation(
+        saved.current.x + e.translationX,
+        saved.current.y + e.translationY,
+        live.current.scale,
+      );
+      live.current.x = t.x;
+      live.current.y = t.y;
+      translateX.setValue(t.x);
+      translateY.setValue(t.y);
+    })
+    .onEnd(() => {
+      saved.current = { ...live.current };
+    });
+
+  const doubleTap = Gesture.Tap()
+    .runOnJS(true)
+    .numberOfTaps(2)
+    .onEnd(() => {
+      if (saved.current.scale > 1) animateTo(1, 0, 0);
+      else animateTo(DOUBLE_TAP_SCALE, 0, 0);
+    });
+
+  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
+  const style = {
+    transform: [{ translateX }, { translateY }, { scale }],
+  };
+
+  return { gesture, style };
+}
 
 export default function ImageViewerScreen({ route, navigation }) {
   const { fileId } = route.params;
@@ -28,17 +115,11 @@ export default function ImageViewerScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState(null);
 
-  const isFocused = useIsFocused();
+  const zoom = useZoom();
 
   useEffect(() => {
     loadImage();
   }, []);
-
-  useEffect(() => {
-    if (isFocused) {
-      showAppOpenAd();
-    }
-  }, [isFocused]);
 
   const loadImage = async () => {
     try {
@@ -138,18 +219,23 @@ export default function ImageViewerScreen({ route, navigation }) {
             {imageFile.name || "Image Preview"}
           </Text>
 
-          <Ionicons name="ellipsis-horizontal" size={22} color="#111" />
+          {/* spacer keeps the title centred */}
+          <View style={{ width: 28 }} />
         </View>
 
         {/* Image */}
-        <View style={styles.imageWrapper}>
-          <Image
-            source={{ uri: imageFile.path }}
-            style={styles.image}
-            contentFit="contain"
-            transition={150}
-          />
-        </View>
+        <GestureDetector gesture={zoom.gesture}>
+          <View style={styles.imageWrapper} collapsable={false}>
+            <Animated.View style={[styles.zoomLayer, zoom.style]}>
+              <Image
+                source={{ uri: imageFile.path }}
+                style={styles.image}
+                contentFit="contain"
+                transition={150}
+              />
+            </Animated.View>
+          </View>
+        </GestureDetector>
 
         {/* Bottom Bar */}
         <View style={styles.bottomBar}>
@@ -200,6 +286,13 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  zoomLayer: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
   },

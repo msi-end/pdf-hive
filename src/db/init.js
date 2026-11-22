@@ -28,4 +28,21 @@ export const initDatabase = async () => {
       FOREIGN KEY (folderId) REFERENCES folders(id)
     );
   `);
+  await runMigrations();
+};
+
+/**
+ * Add a column to an existing table if it is missing (simple migration).
+ */
+const addColumnIfMissing = async (db, table, column, definition) => {
+  const columns = await db.getAllAsync(`PRAGMA table_info(${table})`);
+  if (!columns.some((c) => c.name === column)) {
+    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+};
+
+export const runMigrations = async () => {
+  const db = await getDB();
+  // Timestamp of the last time a file was opened (null = never opened)
+  await addColumnIfMissing(db, "files", "lastOpenedAt", "INTEGER");
 };

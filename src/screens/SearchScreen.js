@@ -14,6 +14,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { searchFiles } from "../db/files";
 
 import { useAdOnScreen } from "../ads/useAdOnScreen";
+import { openFile } from "../utils/openFile";
 
 export default function SearchResultsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("All");
@@ -83,23 +84,6 @@ export default function SearchResultsScreen({ navigation }) {
       }
     } catch {}
     return "";
-  };
-  const openFile = (item, navigation) => {
-    if (item.type === "image") {
-      navigation.navigate("ImageViewer", {
-        // files: imageFiles, // pass all images in folder
-        // index: imageIndexMap[item.id],
-        fileId: item.id,
-      });
-    }
-
-    if (item.type === "pdf") {
-      navigation.navigate("PdfReader", { fileId: item.id });
-    }
-
-    if (item.type === "link") {
-      Linking.openURL(item.path);
-    }
   };
 
   useAdOnScreen();

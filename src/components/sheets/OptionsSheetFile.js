@@ -18,6 +18,7 @@ export default function OptionsSheet({
   onDelete,
   onMark,
   onFavorite,
+  onMove,
   isFolder = false,
 }) {
 
@@ -80,8 +81,11 @@ const insets = useSafeAreaInsets();
               <GridItem icon="edit" label="Color" onPress={onChangeColor} />
             )}
 
-            <GridItem icon="check-circle" label="Make" onPress={onMark} />
+            <GridItem icon="check-circle" label="Mark" onPress={onMark} />
             <GridItem icon="heart" label="Favorite" onPress={onFavorite} />
+            {onMove && (
+              <GridItem icon="folder-open" label="Move" onPress={onMove} />
+            )}
             <GridItem icon="trash" label="Delete" danger onPress={onDelete} />
           </View>
 

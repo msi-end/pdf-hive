@@ -137,9 +137,10 @@ export default function AddPdfLinkScreen({ navigation, route }) {
 
         {/* Upload Placeholder */}
         <View style={styles.uploadBox}>
-          <Ionicons name="cloud-upload-outline" size={36} color="#9CA3AF" />
+          <Ionicons name="book-outline" size={36} color="#9CA3AF" />
           <Text style={styles.uploadText}>
-            App will automatically index your PDF for easy searching once saved.
+            The link opens in the built-in reader and remembers your page.
+            You'll need an internet connection to view it.
           </Text>
         </View>
       </ScrollView>

@@ -73,9 +73,29 @@ export const importImage = async ({ folderId, fromCamera = false }) => {
     to: destinationPath,
   });
 
+  // Friendly display name: original name if available, otherwise a dated one
+  const displayName =
+    image.fileName?.trim() ||
+    `Image ${new Date().toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+
+  let size = image.fileSize || 0;
+  if (!size) {
+    try {
+      const info = await FileSystem.getInfoAsync(destinationPath);
+      size = info.exists ? info.size || 0 : 0;
+    } catch {}
+  }
+
   const fileId = await addFile({
     folderId,
-    name: fileName,
+    name: displayName,
+    size,
     type: 'image',
     path: destinationPath,
     isFavorite: 0,
@@ -85,7 +105,7 @@ export const importImage = async ({ folderId, fromCamera = false }) => {
 
   return {
     id: fileId,
-    name: fileName,
+    name: displayName,
     path: destinationPath,
     type: 'image',
     folderId,

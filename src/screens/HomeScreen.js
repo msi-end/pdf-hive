@@ -11,11 +11,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import * as Linking from "expo-linking";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { getRecentFiles, getFavoriteFiles, toggleFavorite } from "../db/files";
 import { useAdOnScreen } from "../ads/useAdOnScreen";
+import { openFile } from "../utils/openFile";
 
 export default function HomeScreen({ navigation }) {
   const [showSheet, setShowSheet] = useState(false);
@@ -67,23 +67,6 @@ export default function HomeScreen({ navigation }) {
     if (hour < 12) return "Good Morning";
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
-  };
-  const openFile = (item, navigation) => {
-    if (item.type === "image") {
-      navigation.navigate("ImageViewer", {
-        // files: imageFiles, // pass all images in folder
-        // index: imageIndexMap[item.id],
-        fileId: item.id,
-      });
-    }
-
-    if (item.type === "pdf") {
-      navigation.navigate("PdfReader", { fileId: item.id });
-    }
-
-    if (item.type === "link") {
-      Linking.openURL(item.path);
-    }
   };
 
   return (

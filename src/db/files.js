@@ -197,3 +197,41 @@ export const getFavoriteFiles = async () => {
 
   return result;
 };
+
+/**
+ * Record that a file was opened (drives "unread" dot and "last opened").
+ */
+export const markFileOpened = async (fileId) => {
+  const db = await getDB();
+  const now = Date.now();
+  await db.runAsync(`UPDATE files SET lastOpenedAt = ? WHERE id = ?`, [
+    now,
+    fileId,
+  ]);
+  return now;
+};
+
+/**
+ * Move one or more files to another folder.
+ */
+export const moveFiles = async (fileIds, targetFolderId) => {
+  if (!fileIds?.length) return 0;
+  if (!targetFolderId) throw new Error("Target folder is required");
+  const db = await getDB();
+  const placeholders = fileIds.map(() => "?").join(",");
+  const result = await db.runAsync(
+    `UPDATE files SET folderId = ? WHERE id IN (${placeholders})`,
+    [targetFolderId, ...fileIds],
+  );
+  return result.changes;
+};
+
+/**
+ * Delete several files (database rows and stored copies on disk).
+ */
+export const deleteFiles = async (fileIds) => {
+  for (const id of fileIds) {
+    await deleteFile(id);
+  }
+  return true;
+};

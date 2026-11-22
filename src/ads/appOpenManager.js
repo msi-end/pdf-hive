@@ -4,17 +4,22 @@ import {
   TestIds,
 } from "react-native-google-mobile-ads";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  initRemoteAdsConfig,
-  getRemoteBoolean,
-  getRemoteNumber,
-} from "./firebase"; // 👈 your firebase.js file
+import { initRemoteAdsConfig } from "./firebase";
 
 let appOpenAd = null;
 let isLoaded = false;
 
 let app_open_enabled = true;
 let DAILY_LIMIT = 3;
+let suppressUntil = 0;
+
+/**
+ * Skip app-open ads for a short time (e.g. when the app was opened
+ * to receive a PDF via "Open with").
+ */
+export const suppressAppOpenAd = (ms = 5000) => {
+  suppressUntil = Date.now() + ms;
+};
 
 const AD_UNIT_ID = __DEV__
   ? TestIds.APP_OPEN
@@ -104,6 +109,17 @@ export const showAppOpenAd = async () => {
     return;
   }
 
+  if (Date.now() < suppressUntil) {
+    console.log("App open ad suppressed");
+    return;
+  }
+
+  if (!isLoaded || !appOpenAd) {
+    console.log("Ad not ready yet");
+    loadAppOpenAd();
+    return;
+  }
+
   const allowed = await canShowToday();
 
   if (!allowed) {
@@ -111,9 +127,5 @@ export const showAppOpenAd = async () => {
     return;
   }
 
-  if (isLoaded && appOpenAd) {
-    appOpenAd.show();
-  } else {
-    console.log("Ad not ready yet");
-  }
+  appOpenAd.show();
 };

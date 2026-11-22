@@ -4,7 +4,7 @@ import { loadAdsConfig, shouldShowAd } from "./AdsManager"; // updated Remote Co
 import { showInterstitialAd, showRewardedAd } from "./AdController"; // updated ad controller
 
 let lastAdTime = 0;
-const COOLDOWN_MS = 0; // 30 seconds between ads
+const COOLDOWN_MS = 60 * 1000; // at least 60 seconds between ads
 
 export const useAdOnScreen = () => {
   const isFocused = useIsFocused();
@@ -22,20 +22,20 @@ export const useAdOnScreen = () => {
       const config = await loadAdsConfig();
 
       // Check daily/session limit + probability
-      const allowed = await shouldShowAd(config);
-      console.log({ allowed, config });
-      if (!allowed) return;
+      // (returns a "mark as shown" function when allowed)
+      const markAdShown = await shouldShowAd(config);
+      if (!markAdShown) return;
 
       lastAdTime = now;
 
-      // Show ad based on type 
-      if (config.type === "rewarded") {
-        await showRewardedAd();
-      } else {
-        await showInterstitialAd();
-        
-      }
-     await allowed()
+      // Show ad based on type
+      const shown =
+        config.type === "rewarded"
+          ? await showRewardedAd()
+          : await showInterstitialAd();
+
+      // Only count ads that were actually displayed
+      if (shown) await markAdShown();
     };
 
     tryShowAd();
