@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Text, Animated, StyleSheet, Dimensions } from "react-native";
+import { COLORS } from "../constants/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -48,7 +49,7 @@ export default function CustomToast() {
       style={[
         styles.container,
         {
-          backgroundColor: toast.type === "error" ? "#ef4444" : "#0a9b3f",
+          backgroundColor: toast.type === "error" ? "#ef4444" : COLORS.success,
           transform: [{ translateY: slideAnim }],
         },
       ]}

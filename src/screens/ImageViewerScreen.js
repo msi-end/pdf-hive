@@ -20,6 +20,7 @@ import { Image } from "expo-image";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { getFileById, toggleFavorite, deleteFile } from "../db/files";
+import { COLORS } from "../constants/colors";
 
 const { width, height } = Dimensions.get("window");
 const MIN_SCALE = 1;
@@ -244,7 +245,7 @@ export default function ImageViewerScreen({ route, navigation }) {
           <Action
             icon={file.isFavorite ? "heart" : "heart-outline"}
             label="Favorite"
-            color={file.isFavorite ? "#d6249b" : "#000"}
+            color={file.isFavorite ? COLORS.favorite : "#000"}
             onPress={handleFavorite}
           />
 

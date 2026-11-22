@@ -21,6 +21,7 @@ import {
   deleteFile,
   toggleMarked,
 } from "../db/files";
+import { COLORS } from "../constants/colors";
 
 export default function PdfReaderScreen({ route, navigation }) {
   const { fileId } = route.params;
@@ -218,7 +219,7 @@ export default function PdfReaderScreen({ route, navigation }) {
                 : "checkmark-done-circle-outline"
             }
             size={22}
-            color={isMarked ? "#30880d" : "#000"}
+            color={isMarked ? COLORS.success : "#000"}
           />
         </TouchableOpacity>
 
@@ -226,7 +227,7 @@ export default function PdfReaderScreen({ route, navigation }) {
           <Ionicons
             name={isFavorite ? "heart" : "heart-outline"}
             size={22}
-            color={isFavorite ? "#ef4444" : "#000"}
+            color={isFavorite ? COLORS.favorite : "#000"}
           />
         </TouchableOpacity>
 

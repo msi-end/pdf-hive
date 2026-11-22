@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,9 @@ import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
 import * as StoreReview from "expo-store-review";
 import * as MailComposer from "expo-mail-composer";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+import { getStorageUsed } from "../db/files";
+import { formatSize } from "../utils/dateFormater";
 import * as Application from "expo-application";
 
 export default function SettingsScreen({ navigation }) {
@@ -27,21 +29,18 @@ export default function SettingsScreen({ navigation }) {
   const [storageUsed, setStorageUsed] = useState("0 MB");
   const [appVersion, setAppVersion] = useState(Application.nativeApplicationVersion || "2.6.2");
 
-  useEffect(() => {
-    calculateStorage();
-  }, []);
+  // Recalculate whenever the tab is opened (files may have changed)
+  useFocusEffect(
+    useCallback(() => {
+      calculateStorage();
+    }, []),
+  );
 
+  // Size of the PDFs and images stored in the app
   const calculateStorage = async () => {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const stores = await AsyncStorage.multiGet(keys);
-
-      const totalSize = stores.reduce((acc, curr) => {
-        return acc + (curr[1]?.length || 0);
-      }, 0);
-
-      const sizeInMB = (totalSize / 1024 / 1024).toFixed(2);
-      setStorageUsed(`${sizeInMB} MB`);
+      const { bytes } = await getStorageUsed();
+      setStorageUsed(bytes ? formatSize(bytes) : "0 MB");
     } catch (error) {
       console.log("Storage error", error);
     }

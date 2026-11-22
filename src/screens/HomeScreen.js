@@ -16,6 +16,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getRecentFiles, getFavoriteFiles, toggleFavorite } from "../db/files";
 import { useAdOnScreen } from "../ads/useAdOnScreen";
 import { openFile } from "../utils/openFile";
+import { formatDate } from "../utils/dateFormater";
+import { COLORS } from "../constants/colors";
 
 export default function HomeScreen({ navigation }) {
   const [showSheet, setShowSheet] = useState(false);
@@ -73,9 +75,9 @@ export default function HomeScreen({ navigation }) {
     // <SafeAreaView style={styles.container}>
     <View style={styles.container}>
       {/* Header */}
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <LinearGradient
-          colors={["#6C63FF", "#4B46E5"]}
+          colors={["#6C63FF", COLORS.primary]}
           style={styles.containerHeader}
         >
           {/* Top Icons */}
@@ -84,13 +86,9 @@ export default function HomeScreen({ navigation }) {
               <Ionicons name="settings" size={22} color="#fff" />
             </TouchableOpacity>
 
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-horizontal" size={35} color="#fff" />
-            </TouchableOpacity>
           </View>
-          ``
           {/* Greeting */}
-          <Text style={styles.smallText}>Hello, Student</Text>
+          <Text style={styles.smallText}>Hello, Student 👋</Text>
           <Animated.Text
             style={[
               styles.greeting,
@@ -101,7 +99,7 @@ export default function HomeScreen({ navigation }) {
               styles.bigText,
             ]}
           >
-            {getGreeting()},
+            {getGreeting()}
           </Animated.Text>
           {/* Search Bar */}
           <TouchableOpacity
@@ -163,15 +161,19 @@ export default function HomeScreen({ navigation }) {
                   {/* Folder */}
                   <View style={styles.folderRowSmall}>
                     <Ionicons name="folder" size={16} color="#6366F1" />
-                    <Text style={styles.folderSmallText}>
-                      {" "}
-                      - {item.folderName || "No Folder"}
+                    <Text
+                      style={[styles.folderSmallText, { marginLeft: 6, flexShrink: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {item.folderName || "No Folder"}
                     </Text>
                   </View>
 
                   {/* Date */}
                   <Text style={styles.recentTime}>
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    {item.lastOpenedAt
+                      ? `Opened ${formatDate(item.lastOpenedAt)}`
+                      : `Added ${formatDate(item.createdAt)}`}
                   </Text>
                 </TouchableOpacity>
               );
@@ -189,8 +191,11 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : (
           favoriteFiles.map((item) => (
-            <TouchableOpacity onPress={() => openFile(item, navigation)}>
-              <View key={item.id} style={styles.favoriteItem}>
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => openFile(item, navigation)}
+            >
+              <View style={styles.favoriteItem}>
                 <View style={styles.favoriteLeft}>
                   <View style={styles.iconBox}>
                     <Ionicons
@@ -226,7 +231,7 @@ export default function HomeScreen({ navigation }) {
                   }}
                   style={{ marginLeft: 10 }}
                 >
-                  <Ionicons name="heart" size={20} color="#e54696e1" />
+                  <Ionicons name="heart" size={20} color={COLORS.favorite} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>

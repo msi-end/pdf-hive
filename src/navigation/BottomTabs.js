@@ -34,8 +34,13 @@ export default function BottomTabs() {
         tabBarActiveTintColor: "#4F46E5", // Indigo
         tabBarInactiveTintColor: "gray",
         tabBarStyle: {
-          height: 60 + insets.bottom,
-          paddingBottom: 20 + insets.bottom,
+          height: 68 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: 10 + insets.bottom,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
         },
       })}
     >

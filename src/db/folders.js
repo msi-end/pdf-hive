@@ -43,7 +43,12 @@ export const createFolder = async (name, color) => {
 export const getFolders = async () => {
   const db = await getDB();
 
-  return await db.getAllAsync(`SELECT * FROM folders ORDER BY createdAt DESC`);
+  return await db.getAllAsync(
+    `SELECT folders.*,
+       (SELECT COUNT(*) FROM files WHERE files.folderId = folders.id) AS files
+     FROM folders
+     ORDER BY createdAt DESC`,
+  );
 };
 
 /**

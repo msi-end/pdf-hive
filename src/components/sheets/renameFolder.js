@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { COLORS } from "../../constants/colors";
 export default function RenameFolderSheet({
   visible,
   onClose,
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     borderColor: "#111827",
   },
   createBtn: {
-    backgroundColor: "#1D4ED8",
+    backgroundColor: COLORS.primary,
     padding: 16,
     borderRadius: 16,
     flexDirection: "row",

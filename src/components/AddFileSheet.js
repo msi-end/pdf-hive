@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { COLORS } from "../constants/colors";
 
 
 export default function AddFileSheet({
@@ -30,27 +31,27 @@ const insets = useSafeAreaInsets();
           {/* Handle */}
           <View style={styles.handle} />
 
-          <Text style={styles.title}>ADD TO STUDYVAULT</Text>
+          <Text style={styles.title}>ADD TO FOLDER</Text>
 
           {/* Options */}
           <Option
             icon="document-text"
             title="Import PDF"
-            subtitle="Upload files from your device"
+            subtitle="Pick one or more PDFs from your device"
             onPress={onImportPdf}
           />
 
           <Option
             icon="image"
             title="Add Image"
-            subtitle="Scan notes or upload photos"
+            subtitle="Add photos of notes from your gallery"
             onPress={onAddImage}
           />
 
           <Option
             icon="link"
             title="Add PDF Link"
-            subtitle="Import directly from a URL"
+            subtitle="Read a PDF from a web address"
             onPress={onAddLink}
           />
 
@@ -68,7 +69,7 @@ function Option({ icon, title, subtitle, onPress }) {
   return (
     <TouchableOpacity style={styles.option} onPress={onPress}>
       <View style={styles.iconBox}>
-        <Ionicons name={icon} size={24} color="#1d4ed8" />
+        <Ionicons name={icon} size={24} color={COLORS.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.optionTitle}>{title}</Text>
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     marginTop: 12,
     marginHorizontal: 20,
-    backgroundColor: "#1d4ed8",
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",

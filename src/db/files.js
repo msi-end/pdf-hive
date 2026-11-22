@@ -175,13 +175,24 @@ export const getRecentFiles = async (limit = 10) => {
     SELECT files.*, folders.name as folderName
     FROM files
     LEFT JOIN folders ON files.folderId = folders.id
-    ORDER BY files.createdAt DESC
+    ORDER BY COALESCE(files.lastOpenedAt, files.createdAt) DESC
     LIMIT ?
     `,
     [limit],
   );
 
   return result;
+};
+
+/**
+ * Total bytes used by stored files (links take no space).
+ */
+export const getStorageUsed = async () => {
+  const db = await getDB();
+  const row = await db.getFirstAsync(
+    `SELECT COALESCE(SUM(size), 0) AS total, COUNT(*) AS count FROM files WHERE type != 'link'`,
+  );
+  return { bytes: row?.total || 0, count: row?.count || 0 };
 };
 
 export const getFavoriteFiles = async () => {

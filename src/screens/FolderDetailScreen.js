@@ -11,7 +11,6 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Modal,
   BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,8 +32,11 @@ import { importImage } from "../db/imageImport";
 import { showToast } from "../components/CustomToast";
 import OptionsSheet from "../components/sheets/OptionsSheetFile";
 import FolderPickerSheet from "../components/sheets/FolderPickerSheet";
+import SortMenu, { SortButton } from "../components/SortMenu";
+import RenameFileSheet from "../components/sheets/RenameFileSheet";
 import { formatDate, formatSize } from "../utils/dateFormater";
 import { openFile } from "../utils/openFile";
+import { COLORS } from "../constants/colors";
 
 const TABS = ["All", "PDFs", "Images", "Links"];
 
@@ -103,7 +105,6 @@ export default function FolderDetailsScreen({ navigation, route }) {
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showRename, setShowRename] = useState(false);
-  const [newName, setNewName] = useState("");
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -341,13 +342,18 @@ export default function FolderDetailsScreen({ navigation, route }) {
         </TouchableOpacity>
         {isSearching ? null : (
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{folderName}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {folderName}
+            </Text>
             <Text style={styles.headerSubtitle}>
-              {formatDate(createdAt, true)}
+              {files.length} {files.length === 1 ? "file" : "files"} • Created{" "}
+              {formatDate(createdAt)}
             </Text>
           </View>
         )}
-        <View style={styles.headerContainer}>
+        <View
+          style={[styles.headerContainer, isSearching && styles.headerSearching]}
+        >
           {isSearching ? (
             <View style={styles.searchBar}>
               <Ionicons
@@ -448,7 +454,7 @@ export default function FolderDetailsScreen({ navigation, route }) {
                 <Ionicons
                   name={item.isFavorite ? "heart" : "heart-outline"}
                   size={22}
-                  color={item.isFavorite ? "#ef44d2" : "#d1d5db"}
+                  color={item.isFavorite ? COLORS.favorite : "#d1d5db"}
                 />
               </TouchableOpacity>
 
@@ -475,7 +481,7 @@ export default function FolderDetailsScreen({ navigation, route }) {
                       : "checkmark-circle-outline"
                   }
                   size={22}
-                  color={item.isMarked ? "#10b918" : "#d1d5db"}
+                  color={item.isMarked ? COLORS.success : "#d1d5db"}
                 />
               </TouchableOpacity>
             </View>
@@ -526,13 +532,10 @@ export default function FolderDetailsScreen({ navigation, route }) {
           <Text style={styles.countText}>
             {filtered.length} {filtered.length === 1 ? "item" : "items"}
           </Text>
-          <TouchableOpacity
-            style={styles.sortButton}
+          <SortButton
+            label={currentSort?.label}
             onPress={() => setShowSortMenu(true)}
-          >
-            <Ionicons name="swap-vertical" size={16} color="#4f46e5" />
-            <Text style={styles.sortButtonText}>{currentSort?.label}</Text>
-          </TouchableOpacity>
+          />
         </View>
 
         {loading && (
@@ -643,7 +646,6 @@ export default function FolderDetailsScreen({ navigation, route }) {
           onClose={() => setShowOptions(false)}
           onEdit={() => {
             setShowOptions(false);
-            setNewName(selectedItem.name);
             setShowRename(true);
           }}
           onMove={() => {
@@ -698,90 +700,29 @@ export default function FolderDetailsScreen({ navigation, route }) {
         />
 
         {/* Sort menu */}
-        <Modal
+        <SortMenu
           visible={showSortMenu}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowSortMenu(false)}
-        >
-          <TouchableOpacity
-            style={styles.sortBackdrop}
-            activeOpacity={1}
-            onPress={() => setShowSortMenu(false)}
-          >
-            <View style={styles.sortMenu}>
-              <Text style={styles.sortMenuTitle}>Sort by</Text>
-              {SORT_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={styles.sortOption}
-                  onPress={() => chooseSort(option.key)}
-                >
-                  <Ionicons
-                    name={option.icon}
-                    size={18}
-                    color={sortKey === option.key ? "#4f46e5" : "#6b7280"}
-                  />
-                  <Text
-                    style={[
-                      styles.sortOptionText,
-                      sortKey === option.key && styles.sortOptionActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                  {sortKey === option.key && (
-                    <Ionicons name="checkmark" size={18} color="#4f46e5" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
+          onClose={() => setShowSortMenu(false)}
+          options={SORT_OPTIONS}
+          value={sortKey}
+          onChange={chooseSort}
+        />
 
-        {showRename && (
-          <View style={styles.renameOverlay}>
-            <View style={styles.renameBox}>
-              <Text style={styles.renameTitle}>Rename File</Text>
-
-              <TextInput
-                value={newName}
-                onChangeText={setNewName}
-                placeholder="Enter new name"
-                style={styles.renameInput}
-                autoFocus
-              />
-
-              <View style={styles.renameActions}>
-                <TouchableOpacity onPress={() => setShowRename(false)}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (!newName.trim()) return;
-                    try {
-                      await renameFile(selectedItem.id, newName.trim());
-                      setShowRename(false);
-                      loadFiles();
-                      showToast({
-                        message: "File renamed",
-                        type: "success",
-                      });
-                    } catch {
-                      showToast({
-                        message: "Failed to rename file",
-                        type: "error",
-                      });
-                    }
-                  }}
-                >
-                  <Text style={styles.saveText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        )}
+        <RenameFileSheet
+          visible={showRename}
+          file={selectedItem}
+          onClose={() => setShowRename(false)}
+          onSave={async (name) => {
+            try {
+              await renameFile(selectedItem.id, name);
+              updateFileInUI(selectedItem.id, { name });
+              setShowRename(false);
+              showToast({ message: "File renamed", type: "success" });
+            } catch {
+              showToast({ message: "Failed to rename file", type: "error" });
+            }
+          }}
+        />
       </SafeAreaView>
     </View>
   );
@@ -797,20 +738,32 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
-    height: 56,
+    height: 60,
     borderBottomWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  headerCenter: {
+    flex: 1,
+    marginLeft: 12,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
+    color: "#111827",
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 1,
   },
   headerContainer: {
-    paddingHorizontal: 16,
     height: 50,
     justifyContent: "center",
+  },
+  headerSearching: {
+    flex: 1,
+    marginLeft: 12,
   },
   searchBar: {
     flexDirection: "row",
@@ -819,7 +772,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 40,
-    width: 300,
   },
   searchIcon: {
     marginRight: 8,
@@ -897,7 +849,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#3b82f6",
+    backgroundColor: COLORS.primary,
     borderWidth: 2,
     borderColor: "#fff",
   },
@@ -962,46 +914,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  renameOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  renameBox: {
-    width: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-  },
-  renameTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  renameInput: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 10,
-  },
-  renameActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 15,
-  },
-  cancelText: {
-    marginRight: 20,
-    color: "#6b7280",
-  },
-  saveText: {
-    color: "#4f46e5",
-    fontWeight: "600",
-  },
 
   /* Selection mode */
   selectionTitle: {
@@ -1035,56 +947,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
     fontWeight: "500",
-  },
-  sortButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: "#eef2ff",
-  },
-  sortButtonText: {
-    fontSize: 13,
-    color: "#4f46e5",
-    fontWeight: "600",
-  },
-  sortBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sortMenu: {
-    width: "80%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 12,
-  },
-  sortMenuTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#6366f1",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
-  sortOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  sortOptionText: {
-    flex: 1,
-    fontSize: 15,
-    color: "#374151",
-  },
-  sortOptionActive: {
-    color: "#4f46e5",
-    fontWeight: "700",
   },
 });

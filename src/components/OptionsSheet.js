@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { COLORS } from "../constants/colors";
 
 export default function OptionsSheet({
   visible,
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     marginTop: 12,
     marginHorizontal: 20,
-    backgroundColor: "#1d4ed8",
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",

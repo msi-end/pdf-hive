@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -23,8 +25,34 @@ import { showToast } from "../components/CustomToast";
 import OptionsSheet from "../components/OptionsSheet";
 import RenameFolderSheet from "../components/sheets/renameFolder";
 import { formatDate } from "../utils/dateFormater";
+import SortMenu from "../components/SortMenu";
+
+const FOLDER_SORT_KEY = "folders_sort";
+const FOLDER_SORT_OPTIONS = [
+  { key: "newest", label: "Newest first", icon: "arrow-down" },
+  { key: "oldest", label: "Oldest first", icon: "arrow-up" },
+  { key: "name_asc", label: "Name (A–Z)", icon: "text" },
+  { key: "most_files", label: "Most files", icon: "documents" },
+];
+
+const sortFolders = (folders, key) => {
+  const sorted = [...folders];
+  const byName = (a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  switch (key) {
+    case "oldest":
+      return sorted.sort((a, b) => a.createdAt - b.createdAt);
+    case "name_asc":
+      return sorted.sort(byName);
+    case "most_files":
+      return sorted.sort((a, b) => (b.files || 0) - (a.files || 0) || byName(a, b));
+    default:
+      return sorted.sort((a, b) => b.createdAt - a.createdAt);
+  }
+};
 
 import { useAdOnScreen } from "../ads/useAdOnScreen";
+import { COLORS } from "../constants/colors";
 
 export default function FoldersScreen({ navigation, route }) {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -37,9 +65,27 @@ export default function FoldersScreen({ navigation, route }) {
   const [showRename, setShowRename] = useState(false);
   const [isMarked, setIsMarked] = useState(folders?.isMarked === 1);
 
+  const [sortKey, setSortKey] = useState("newest");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  // Reload whenever the tab is shown so file counts stay current
+  useFocusEffect(
+    useCallback(() => {
+      loadFolders();
+    }, []),
+  );
+
   useEffect(() => {
-    loadFolders();
+    AsyncStorage.getItem(FOLDER_SORT_KEY)
+      .then((v) => v && FOLDER_SORT_OPTIONS.some((o) => o.key === v) && setSortKey(v))
+      .catch(() => {});
   }, []);
+
+  const chooseSort = (key) => {
+    setSortKey(key);
+    setShowSortMenu(false);
+    AsyncStorage.setItem(FOLDER_SORT_KEY, key).catch(() => {});
+  };
 
   // Opened from the Home screen "+" button
   useEffect(() => {
@@ -52,7 +98,6 @@ export default function FoldersScreen({ navigation, route }) {
     try {
       const data = await getFolders();
       setFolders(data);
-      console.log("Loaded folders:", data);
     } catch (err) {
       console.log("Failed to load folders", err);
     } finally {
@@ -67,8 +112,8 @@ export default function FoldersScreen({ navigation, route }) {
         f.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
-    return result;
-  }, [folders, searchQuery]);
+    return sortFolders(result, sortKey);
+  }, [folders, searchQuery, sortKey]);
 
   const formatLastOpened = (dateString) => {
     const date = new Date(dateString);
@@ -169,7 +214,7 @@ export default function FoldersScreen({ navigation, route }) {
                     : "checkmark-circle-outline"
                 }
                 size={22}
-                color={item.isMarked ? "#10b918" : "#d1d5db"}
+                color={item.isMarked ? COLORS.success : "#d1d5db"}
               />
             </TouchableOpacity>
 
@@ -204,7 +249,7 @@ export default function FoldersScreen({ navigation, route }) {
             {/* Bottom Row */}
             <View style={styles.bottomRow}>
               <Text style={styles.fileCount}>
-                {item.files} {item.files === 1 ? "File" : "Files"}
+                {item.files || 0} {item.files === 1 ? "file" : "files"}
               </Text>
 
               <Text style={styles.lastOpened}>
@@ -222,8 +267,11 @@ export default function FoldersScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Organizer</Text>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Ionicons name="options-outline" size={22} color="#4338ca" />
+        <TouchableOpacity
+          style={styles.filterBtn}
+          onPress={() => setShowSortMenu(true)}
+        >
+          <Ionicons name="options-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
@@ -242,6 +290,14 @@ export default function FoldersScreen({ navigation, route }) {
 
       {/* Main Content */}
       {renderContent()}
+
+      <SortMenu
+        visible={showSortMenu}
+        onClose={() => setShowSortMenu(false)}
+        options={FOLDER_SORT_OPTIONS}
+        value={sortKey}
+        onChange={chooseSort}
+      />
 
       {/* Floating Add Button */}
       <TouchableOpacity

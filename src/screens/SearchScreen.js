@@ -15,6 +15,7 @@ import { searchFiles } from "../db/files";
 
 import { useAdOnScreen } from "../ads/useAdOnScreen";
 import { openFile } from "../utils/openFile";
+import { formatDate as formatDateShared } from "../utils/dateFormater";
 
 export default function SearchResultsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("All");
@@ -70,10 +71,7 @@ export default function SearchResultsScreen({ navigation }) {
     return { name: "link", bg: "#E0E7FF", color: "#4F46E5" };
   };
 
-  const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString();
-  };
+  const formatDate = (timestamp) => formatDateShared(timestamp);
 
   const getFileSize = async (path) => {
     try {
@@ -117,7 +115,7 @@ export default function SearchResultsScreen({ navigation }) {
               style={{ marginRight: 4 }}
             />
             <Text style={styles.folderText}>
-              - {item.folderName || "No Folder"}
+              {item.folderName || "No Folder"}
             </Text>
           </View>
         </View>

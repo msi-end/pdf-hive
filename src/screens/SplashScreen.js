@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Image, Animated, Easing } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { COLORS } from "../constants/colors";
 
 export default function SplashScreen() {
   const navigation = useNavigation();
@@ -9,7 +10,7 @@ export default function SplashScreen() {
   useEffect(() => {
     Animated.timing(progress, {
       toValue: 1,
-      duration: 1000,
+      duration: 600,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
     }).start(() => {
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
 
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#3D3BFF",
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
   },
 });
