@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Image Viewer - StudyVault</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1313ec",
+              "background-light": "#f6f6f8",
+              "background-dark": "#101022",
+            },
+            fontFamily: {
+              "display": ["Lexend", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#0d0d1b] dark:text-white">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- TopAppBar Component -->
+<header class="z-20 flex items-center bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-200 dark:border-gray-800">
+<div class="flex items-center gap-1 min-w-[80px]">
+<button class="flex items-center text-primary">
+<span class="material-symbols-outlined">chevron_left</span>
+<span class="text-base font-medium">Notes</span>
+</button>
+</div>
+<h2 class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-tight tracking-tight flex-1 text-center truncate px-2">
+                Chapter 4 - Molecular Biology.jpg
+            </h2>
+<div class="flex items-center justify-end min-w-[80px]">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[#0d0d1b] dark:text-white">more_horiz</span>
+</button>
+</div>
+</header>
+<!-- Images Component (Main Content) -->
+<main class="relative flex-1 flex flex-col items-center justify-center bg-[#e5e5e7] dark:bg-[#050510] overflow-hidden">
+<div class="w-full h-full @container flex items-center justify-center p-4">
+<div class="relative w-full h-full max-w-2xl bg-white dark:bg-neutral-900 shadow-2xl rounded-sm overflow-hidden flex items-center justify-center">
+<!-- The note image placeholder -->
+<div class="w-full h-full bg-center bg-no-repeat bg-contain" data-alt="Handwritten student study notes on molecular biology" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDrsitYrjfD26xWipvhroX7S_YstL-2EiywZIxNn8An0EDeyMvobJZroBpBk3SVfaQBgoZrXH8KyFrd0n8ygTJQOOtPR90fTf3mG9WgvtNd6xho_tctpkbqRabPGgp-oQIrduzwq4s03-ghbLX4J5daPPA_7ZYGlIvDB0_yrZKx7IIDndY-lauhsZojbebUhDdneIXEMWftpnlvujTmCHPFrhmAVuZCT0zrVQTSOtqM3gvV-hRXFZEo3Rr5fDZMu0QMtXGcYl4OQi4");'>
+</div>
+</div>
+</div>
+<!-- PageIndicators Component (Overlay) -->
+<div class="absolute bottom-24 flex w-full flex-row items-center justify-center gap-2">
+<div class="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full">
+<div class="h-1.5 w-1.5 rounded-full bg-primary"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-black/20 dark:bg-white/20"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-black/20 dark:bg-white/20"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-black/20 dark:bg-white/20"></div>
+</div>
+</div>
+</main>
+<!-- ToolBar Component -->
+<footer class="z-20 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-8">
+<div class="flex justify-between items-center px-6 py-3">
+<div class="flex items-center gap-8 w-full justify-around">
+<button class="flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-[#0d0d1b] dark:text-white group-active:text-primary">ios_share</span>
+<span class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Share</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-[#0d0d1b] dark:text-white group-active:text-primary">star</span>
+<span class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Favorite</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-[#0d0d1b] dark:text-white group-active:text-primary">edit_note</span>
+<span class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Annotate</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-red-500">delete</span>
+<span class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Delete</span>
+</button>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

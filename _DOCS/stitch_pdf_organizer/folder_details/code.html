@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StudyVault - Folder Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1313ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0d0d1b] dark:text-white antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<!-- TopAppBar -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-[#cfcfe7] dark:border-[#2d2d4d]">
+<div class="text-primary flex size-12 shrink-0 items-center cursor-pointer">
+<span class="material-symbols-outlined text-3xl">chevron_left</span>
+</div>
+<h2 class="text-[#0d0d1b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Biology 101</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 bg-transparent text-primary gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</div>
+<!-- Tabs Container -->
+<div class="bg-background-light dark:bg-background-dark pt-2">
+<div class="flex border-b border-[#cfcfe7] dark:border-[#2d2d4d] px-4 gap-8">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-[13px] pt-4" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">All</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-[#4c4c9a] dark:text-[#a0a0d0] pb-[13px] pt-4" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">PDFs</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-[#4c4c9a] dark:text-[#a0a0d0] pb-[13px] pt-4" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">Images</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-[#4c4c9a] dark:text-[#a0a0d0] pb-[13px] pt-4" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">Links</p>
+</a>
+</div>
+</div>
+<!-- File List Section -->
+<div class="flex flex-col px-2 py-2">
+<!-- ListItem: PDF -->
+<div class="flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 min-h-[80px] py-3 justify-between hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-normal line-clamp-1">Lecture_Notes_Week1.pdf</p>
+<p class="text-[#4c4c9a] dark:text-[#a0a0d0] text-xs font-normal leading-normal line-clamp-2">Oct 12, 2023 • 2.4 MB</p>
+</div>
+</div>
+<div class="shrink-0">
+<div class="text-primary flex size-8 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+</div>
+</div>
+<!-- ListItem: Image -->
+<div class="flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 min-h-[80px] py-3 justify-between hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-12 border border-[#cfcfe7] dark:border-[#2d2d4d]" data-alt="Microscope cell structure diagram colorful" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAjPTK_7DCDkDRtdeANr9lulI5lirzQRa_ViQF_Nin8DHy2Kn2xDrXU0VRMnsuTDCjVOZEATuvcKpwDvEiyjsJnXPfAYYNnuEd2ip5864tW0_-2-WRjozHo5S1gFWDuf7BMvjdzwh4Cpj955U-MqNSZ4LWbQtovKZrj5eW5170LugVCQ1JMzB1rLYxdwqVCHnA1hhgfkvjjWMjf5-C6ZGXInH09J6u9kHQ1QHpmYz8Zfodx5dRV3AD1vjWpvQqu46SVngBqL90ef4w");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-normal line-clamp-1">Cell_Structure_Diagram.png</p>
+<p class="text-[#4c4c9a] dark:text-[#a0a0d0] text-xs font-normal leading-normal line-clamp-2">Oct 14, 2023 • 1.1 MB</p>
+</div>
+</div>
+<div class="shrink-0">
+<div class="text-[#cfcfe7] dark:text-[#4c4c9a] flex size-8 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">star</span>
+</div>
+</div>
+</div>
+<!-- ListItem: PDF (Unstarred) -->
+<div class="flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 min-h-[80px] py-3 justify-between hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-normal line-clamp-1">Research_Paper_Draft.pdf</p>
+<p class="text-[#4c4c9a] dark:text-[#a0a0d0] text-xs font-normal leading-normal line-clamp-2">Oct 15, 2023 • 850 KB</p>
+</div>
+</div>
+<div class="shrink-0 flex gap-2">
+<div class="text-[#cfcfe7] dark:text-[#4c4c9a] flex size-8 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">more_vert</span>
+</div>
+</div>
+</div>
+<!-- ListItem: Link -->
+<div class="flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 min-h-[80px] py-3 justify-between hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12">
+<span class="material-symbols-outlined">link</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-normal line-clamp-1">Kahn_Academy_Genetics.url</p>
+<p class="text-[#4c4c9a] dark:text-[#a0a0d0] text-xs font-normal leading-normal line-clamp-2">Oct 16, 2023 • Link</p>
+</div>
+</div>
+<div class="shrink-0">
+<div class="text-primary flex size-8 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+</div>
+</div>
+<!-- ListItem: Image 2 -->
+<div class="flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 min-h-[80px] py-3 justify-between hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-12 border border-[#cfcfe7] dark:border-[#2d2d4d]" data-alt="DNA helix structural illustration" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCbfEcq473JhpyyCrU1H44KGVVlU2aMhFcjqqhuNFHBdMGZivFH08Ju4144Ot4vWQi4tIJlZYWr1X9Woz8NuM894pjGRirn5eGpGOi0KMkH2JLO44uYHWPNPJT_S3Te_sftcVNsNrkLMOm5p7k8CaghAYjjFdVge-Dn8vflB_8zau-xhy9Z9rKJj03AdMzlsZGFegSFjLU6zFtgquJ1-4nplXZL708a0mxuPfLzCG0wkLBHjdO4O4TN6JPTmx8HRHZl5L03Cs_JU_w");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-normal line-clamp-1">DNA_Helix_Render.jpg</p>
+<p class="text-[#4c4c9a] dark:text-[#a0a0d0] text-xs font-normal leading-normal line-clamp-2">Oct 18, 2023 • 2.2 MB</p>
+</div>
+</div>
+<div class="shrink-0">
+<div class="text-[#cfcfe7] dark:text-[#4c4c9a] flex size-8 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">star</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<div class="fixed bottom-8 right-6">
+<button class="bg-primary text-white size-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<div class="h-20 bg-background-light dark:bg-background-dark"></div>
+</div>
+</body></html>

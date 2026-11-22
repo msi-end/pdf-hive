@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "405022633321",
+    "project_id": "pdfhive-2ed3a",
+    "storage_bucket": "pdfhive-2ed3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405022633321:android:bab407efbda90d1275e1f8",
+        "android_client_info": {
+          "package_name": "com.reyone.PDFOrganizer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuPKP3KXYvhxX85KLNYPa33ljK3pbRwOU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

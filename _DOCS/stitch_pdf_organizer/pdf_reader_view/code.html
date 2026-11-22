@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StudyVault - PDF Reader View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1313ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="z-20 flex items-center justify-between px-4 py-3 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 shrink-0">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back_ios_new</span>
+</button>
+</div>
+<div class="flex flex-col items-center flex-1 min-w-0 px-2">
+<h1 class="text-sm font-semibold truncate w-full text-center">Organic Chemistry - Ch 4.pdf</h1>
+<span class="text-[10px] text-slate-500 uppercase tracking-widest font-medium">StudyVault</span>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
+<span class="material-symbols-outlined text-primary">search</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
+<span class="material-symbols-outlined text-primary active-fill">bookmark</span>
+</button>
+</div>
+</header>
+<!-- PDF Viewer Area -->
+<main class="flex-1 overflow-y-auto bg-slate-200 dark:bg-slate-900 flex flex-col items-center gap-4 p-4 scroll-smooth">
+<!-- PDF Page 1 -->
+<div class="w-full max-w-2xl bg-white dark:bg-slate-800 shadow-xl rounded-sm aspect-[1/1.414] relative overflow-hidden ring-1 ring-slate-300 dark:ring-slate-700">
+<div class="absolute inset-0 flex flex-col p-8 md:p-12">
+<div class="w-full h-8 bg-slate-100 dark:bg-slate-700 rounded mb-6"></div>
+<div class="flex flex-col gap-4">
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-11/12 h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-10/12 h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+</div>
+<div class="my-8 w-full aspect-video bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+<div class="w-full h-full bg-cover bg-center" data-alt="Technical diagram of a chemical molecule structure" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAm40-5XI0UG2egM4Sfw4ohx_KB046Y74BpNw0Y7sKQIgB4dmN8HEAby_YpypOMDb8qFtu9YsDosNiBEq9o1S1JwCIz6wzwOuYQO0zIfGNynBlqPooKc9yGmgsWbSFdNF406aTOE0S5t0S-XoGeoQJyNT7cVHRD5A8omXEpYY3YY0O9lA9d8J110ScjF-34PsnNRPC0Nl9N4ccOdrfsJ3asLh9BulYUxWqaG9jpqAa8YiaIxi_WpI86IYlI4P6eErM2OVa0-WBfT3c');"></div>
+</div>
+<div class="flex flex-col gap-4">
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-9/12 h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+</div>
+</div>
+</div>
+<!-- PDF Page 2 (Teaser) -->
+<div class="w-full max-w-2xl bg-white dark:bg-slate-800 shadow-xl rounded-sm aspect-[1/1.414] relative overflow-hidden ring-1 ring-slate-300 dark:ring-slate-700 opacity-90">
+<div class="absolute inset-0 flex flex-col p-8 md:p-12">
+<div class="w-full h-8 bg-slate-100 dark:bg-slate-700 rounded mb-6"></div>
+<div class="flex flex-col gap-4">
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+<div class="w-full h-4 bg-slate-100 dark:bg-slate-700 rounded"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Utility Bar -->
+<nav class="z-20 px-6 py-4 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<!-- Zoom Controls -->
+<div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shrink-0">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">remove_circle</span>
+</button>
+<span class="px-2 text-xs font-bold w-12 text-center">100%</span>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+</div>
+<!-- Page Indicator -->
+<div class="flex items-center gap-2">
+<div class="px-4 py-2 bg-primary/10 dark:bg-primary/20 rounded-full border border-primary/20">
+<span class="text-sm font-semibold text-primary">Page 1 of 12</span>
+</div>
+</div>
+<!-- Layout Controls -->
+<div class="flex items-center gap-1 shrink-0">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</nav>
+<!-- Side Scrubber (iOS Style) -->
+<div class="fixed right-1 top-1/2 -translate-y-1/2 w-1.5 h-32 bg-slate-400/30 dark:bg-slate-600/30 rounded-full backdrop-blur-sm pointer-events-none">
+<div class="absolute top-2 left-0 right-0 h-4 bg-primary rounded-full"></div>
+</div>
+</body></html>

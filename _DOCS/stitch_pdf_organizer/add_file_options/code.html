@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Add File Options - StudyVault</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1313ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .bottom-sheet-overlay {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen font-display text-[#0d0d1b] dark:text-[#f8f8fc]">
+<!-- App Background Mockup -->
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Header Mockup -->
+<header class="flex items-center justify-between px-6 py-4">
+<h1 class="text-2xl font-bold text-primary">StudyVault</h1>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-2xl">search</span>
+<span class="material-symbols-outlined text-2xl">settings</span>
+</div>
+</header>
+<!-- Content Mockup -->
+<main class="flex-1 px-6 pt-4 space-y-6">
+<div class="p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800">
+<h2 class="text-lg font-semibold mb-2">My Library</h2>
+<p class="text-sm text-zinc-500">You have 12 documents in your vault.</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="aspect-square bg-zinc-200 dark:bg-zinc-800 rounded-xl flex items-center justify-center border border-dashed border-zinc-400">
+<span class="material-symbols-outlined text-zinc-400">add_circle</span>
+</div>
+<div class="aspect-square bg-zinc-200 dark:bg-zinc-800 rounded-xl flex items-center justify-center border border-dashed border-zinc-400">
+<span class="material-symbols-outlined text-zinc-400">add_circle</span>
+</div>
+</div>
+</main>
+<!-- Scrim/Overlay -->
+<div class="absolute inset-0 bottom-sheet-overlay z-10"></div>
+<!-- Bottom Sheet -->
+<div class="absolute inset-x-0 bottom-0 z-20 bg-background-light dark:bg-[#1c1c2e] rounded-t-[2.5rem] shadow-[0_-8px_30px_rgb(0,0,0,0.12)] flex flex-col pb-10">
+<!-- Handle -->
+<div class="flex h-8 w-full items-center justify-center mt-2">
+<div class="h-1.5 w-12 rounded-full bg-[#cfcfe7] dark:bg-zinc-700"></div>
+</div>
+<!-- Section Header -->
+<div class="px-6 py-2">
+<h4 class="text-[#4c4c9a] dark:text-zinc-400 text-sm font-bold leading-normal tracking-[0.05em] text-center uppercase">Add to StudyVault</h4>
+</div>
+<!-- Options List -->
+<div class="mt-4 px-4 space-y-3">
+<!-- Import PDF -->
+<button class="w-full flex items-center gap-4 bg-white dark:bg-[#25253d] px-5 min-h-[72px] justify-between rounded-xl active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-12">
+<span class="material-symbols-outlined text-[28px]">picture_as_pdf</span>
+</div>
+<div class="text-left">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-tight">Import PDF</p>
+<p class="text-[#4c4c9a] dark:text-zinc-400 text-xs mt-0.5">Upload files from your device</p>
+</div>
+</div>
+<div class="shrink-0">
+<span class="material-symbols-outlined text-zinc-300">chevron_right</span>
+</div>
+</button>
+<!-- Add Image -->
+<button class="w-full flex items-center gap-4 bg-white dark:bg-[#25253d] px-5 min-h-[72px] justify-between rounded-xl active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-12">
+<span class="material-symbols-outlined text-[28px]">image</span>
+</div>
+<div class="text-left">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-tight">Add Image</p>
+<p class="text-[#4c4c9a] dark:text-zinc-400 text-xs mt-0.5">Scan notes or upload photos</p>
+</div>
+</div>
+<div class="shrink-0">
+<span class="material-symbols-outlined text-zinc-300">chevron_right</span>
+</div>
+</button>
+<!-- Add PDF Link -->
+<button class="w-full flex items-center gap-4 bg-white dark:bg-[#25253d] px-5 min-h-[72px] justify-between rounded-xl active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-12">
+<span class="material-symbols-outlined text-[28px]">link</span>
+</div>
+<div class="text-left">
+<p class="text-[#0d0d1b] dark:text-white text-base font-semibold leading-tight">Add PDF Link</p>
+<p class="text-[#4c4c9a] dark:text-zinc-400 text-xs mt-0.5">Import directly from a URL</p>
+</div>
+</div>
+<div class="shrink-0">
+<span class="material-symbols-outlined text-zinc-300">chevron_right</span>
+</div>
+</button>
+</div>
+<!-- Cancel Button -->
+<div class="px-4 mt-6">
+<button class="w-full bg-[#e7e7f3] dark:bg-zinc-800 text-[#0d0d1b] dark:text-white py-4 rounded-xl font-semibold active:opacity-80">
+                    Cancel
+                </button>
+</div>
+</div>
+<!-- Navigation Bar Mockup -->
+<nav class="absolute bottom-0 w-full h-20 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex justify-around items-center px-4 pb-4">
+<div class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">folder</span>
+<span class="text-[10px] font-bold">Files</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-zinc-400">
+<span class="material-symbols-outlined">school</span>
+<span class="text-[10px] font-bold">Study</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-zinc-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</div>
+</nav>
+</div>
+</body></html>

@@ -1,29 +1,60 @@
 {
   "expo": {
-    "name": "PDFOrganizer",
-    "slug": "PDFOrganizer",
-    "version": "1.0.0",
+    "name": "PDF Hive",
+    "slug": "pdf-hive",
+    "version": "2.6.2",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo-1024.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/playstore-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true
     },
+    "androidStatusBar": {
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "barStyle": "dark-content",
+      "backgroundColor": "#fcfcfc"
+    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo-1024.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "softwareKeyboardLayoutMode": "resize",
+      "navigationBar": {
+        "visible": "sticky",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.reyone.PDFOrganizer",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-mail-composer",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6476459310344533~7410183552",
+          "iosAppId": "ca-app-pub-6476459310344533~7410183552"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0cfe22d8-8528-4d73-a245-a1bf3a0f6b89"
+      }
     }
   }
 }
