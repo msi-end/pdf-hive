@@ -103,14 +103,7 @@ export default function ImageViewerScreen({ route, navigation }) {
         style: "destructive",
         onPress: async () => {
           try {
-            // remove from filesystem if local
-            if (file.type !== "link") {
-              await FileSystem.deleteAsync(file.path, {
-                idempotent: true,
-              });
-            }
-
-            // remove from DB
+            // removes from DB and device storage
             await deleteFile(file.id);
 
             navigation.goBack();

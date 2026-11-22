@@ -238,7 +238,7 @@ export default function HomeScreen({ navigation }) {
 
                 <TouchableOpacity
                   onPress={async () => {
-                    await toggleFavorite(item.id);
+                    await toggleFavorite(item.id, 0);
                     loadFavorites();
                   }}
                   style={{ marginLeft: 10 }}
@@ -256,7 +256,8 @@ export default function HomeScreen({ navigation }) {
         style={styles.fab}
         onPress={() =>
           navigation.navigate("Folders", {
-            openCreateFolder: true,
+            screen: "FoldersHome",
+            params: { openCreateFolder: true },
           })
         }
       >

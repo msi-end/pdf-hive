@@ -4,13 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Pdf from "react-native-pdf";
 import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system/legacy";
 import { showAppOpenAd } from "../ads/appOpenManager";
 import { useIsFocused } from "@react-navigation/native";
+import { updateLastOpenedPage } from "../db/pdfProgress";
 
 import {
   getFileById,
-  updateReadingTime,
   toggleFavorite,
   deleteFile,
   toggleMarked,
@@ -21,19 +20,15 @@ export default function PdfReaderScreen({ route, navigation }) {
 
   const [file, setFile] = useState(null);
   const [page, setPage] = useState(1);
+  const [initialPage, setInitialPage] = useState(1);
   const [darkMode, setDarkMode] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isMarked, setIsMarked] = useState(false);
-  const startTimeRef = useRef(Date.now());
   const [totalPages, setTotalPages] = useState(0);
   const pdfRef = useRef(null);
 
   useEffect(() => {
     loadPdf();
-
-    return () => {
-      saveReadingTime();
-    };
   }, []);
 
   const isFocused = useIsFocused();
@@ -47,16 +42,9 @@ export default function PdfReaderScreen({ route, navigation }) {
     const f = await getFileById(fileId);
     setFile(f);
     setPage(f?.lastOpenedPage || 1);
+    setInitialPage(f?.lastOpenedPage || 1);
     setIsFavorite(f?.isFavorite === 1);
     setIsMarked(f?.isMarked === 1);
-  };
-
-  const saveReadingTime = async () => {
-    const end = Date.now();
-    const seconds = Math.floor((end - startTimeRef.current) / 1000);
-    if (seconds > 3) {
-      await updateReadingTime(fileId, seconds);
-    }
   };
 
   const handleShare = async () => {
@@ -73,7 +61,6 @@ export default function PdfReaderScreen({ route, navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await FileSystem.deleteAsync(file.path, { idempotent: true });
             await deleteFile(file.id);
             navigation.goBack();
           },
@@ -89,7 +76,7 @@ export default function PdfReaderScreen({ route, navigation }) {
   };
 
   const handleMarked = async () => {
-    await toggleMarked(file.id, page);
+    await toggleMarked(file.id, !isMarked);
     setIsMarked(!isMarked);
   };
 
@@ -138,6 +125,7 @@ export default function PdfReaderScreen({ route, navigation }) {
             : `file://${file.path}`,
         }}
         style={{ flex: 1 }}
+        page={initialPage}
         enablePaging={false}
         horizontal={false}
         enableAntialiasing={true}
@@ -148,6 +136,9 @@ export default function PdfReaderScreen({ route, navigation }) {
         }}
         onPageChanged={(p) => {
           setPage(p);
+          updateLastOpenedPage(fileId, p).catch((e) =>
+            console.log("Failed to save page:", e),
+          );
         }}
         onError={(error) => console.log("PDF ERROR:", error)}
       />

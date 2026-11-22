@@ -1,5 +1,6 @@
 // /db/folders.js
 import { getDB } from "./database";
+import { deleteFileFromDisk } from "./files";
 
 /**
  * Helper: check if folder name already exists
@@ -70,6 +71,13 @@ export const renameFolder = async (folderId, newName, newColor) => {
  */
 export const deleteFolder = async (folderId) => {
   const db = await getDB();
+
+  const files = await db.getAllAsync(`SELECT * FROM files WHERE folderId = ?`, [
+    folderId,
+  ]);
+  for (const file of files) {
+    await deleteFileFromDisk(file);
+  }
 
   await db.runAsync(`DELETE FROM files WHERE folderId = ?`, [folderId]);
 

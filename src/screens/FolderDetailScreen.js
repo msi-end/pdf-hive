@@ -343,7 +343,7 @@ export default function FolderDetailsScreen({ navigation, route }) {
           onImportPdf={async () => {
             try {
               const newFile = await importPdf(folderId);
-              if (newFile.status == true) {
+              if (newFile?.status === true) {
                 showToast({
                   message: `Imported ${newFile.name}`,
                   type: "success",

@@ -30,10 +30,10 @@ export const initAppOpenAds = async () => {
   // 2 Update local variables from fetched values
   if (remoteValues) {
     app_open_enabled = remoteValues.appOpenEnabled ?? true;
-    app_open_daily_limit = remoteValues.appOpenDailyLimit ?? 3;
+    DAILY_LIMIT = remoteValues.appOpenDailyLimit ?? 3;
   }
 
-  console.log("Remote Values:", { app_open_enabled, app_open_daily_limit });
+  console.log("Remote Values:", { app_open_enabled, DAILY_LIMIT });
 
   // 3 Load ad if enabled
   if (app_open_enabled) {

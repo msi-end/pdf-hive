@@ -26,7 +26,7 @@ import { formatDate } from "../utils/dateFormater";
 
 import { useAdOnScreen } from "../ads/useAdOnScreen";
 
-export default function FoldersScreen({ navigation }) {
+export default function FoldersScreen({ navigation, route }) {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +40,14 @@ export default function FoldersScreen({ navigation }) {
   useEffect(() => {
     loadFolders();
   }, []);
+
+  // Opened from the Home screen "+" button
+  useEffect(() => {
+    if (route?.params?.openCreateFolder) {
+      setShowCreateFolder(true);
+      navigation.setParams({ openCreateFolder: undefined });
+    }
+  }, [route?.params?.openCreateFolder]);
   const loadFolders = async () => {
     try {
       const data = await getFolders();

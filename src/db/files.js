@@ -1,5 +1,19 @@
 // /db/files.js
+import * as FileSystem from "expo-file-system/legacy";
 import { getDB } from "./database";
+
+/**
+ * Remove a stored file from device storage (links have nothing on disk).
+ * Failures are logged but never block the DB delete.
+ */
+export const deleteFileFromDisk = async (file) => {
+  if (!file || file.type === "link" || !file.path) return;
+  try {
+    await FileSystem.deleteAsync(file.path, { idempotent: true });
+  } catch (e) {
+    console.log("Failed to delete file from disk:", e);
+  }
+};
 
 export const addFile = async ({
   name,
@@ -47,6 +61,11 @@ export const getFilesByFolder = async (folderId) => {
 
 export const deleteFile = async (fileId) => {
   const db = await getDB();
+
+  const file = await db.getFirstAsync(`SELECT * FROM files WHERE id = ?`, [
+    fileId,
+  ]);
+  await deleteFileFromDisk(file);
 
   await db.runAsync(`DELETE FROM files WHERE id = ?`, [fileId]);
 
